@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MegaBase Builder: 4-in-1 Clover</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f6f4;--sf:#fff;--ink:#0b2630;--mu:#3f6068;--ln:#bcd0cc;--gold:#a87000;--mine:#d9480f;--breed:#d1155f;--cook:#12922f;--stor:#2447d6;--hub:#d9a000;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#061419;--sf:#0d2630;--ink:#f1f8f6;--mu:#a3c0c3;--ln:#1d4552;--gold:#ffd23f;--mine:#ff8a3d;--breed:#ff5c93;--cook:#46e07a;--stor:#6f9bff;--hub:#ffd23f}}
+:root[data-theme="dark"]{--bg:#061419;--sf:#0d2630;--ink:#f1f8f6;--mu:#a3c0c3;--ln:#1d4552;--gold:#ffd23f;--mine:#ff8a3d;--breed:#ff5c93;--cook:#46e07a;--stor:#6f9bff;--hub:#ffd23f}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15;font-weight:800}
+.wrap{max-width:1100px;margin:auto;padding:0 16px}
+header{padding:20px 0 8px}
+h1{font-size:clamp(1.6rem,4vw,2.4rem)}
+header p{color:var(--mu);margin:6px 0 0;max-width:66ch;font-weight:500}
+nav{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto}
+nav button{font:inherit;font-weight:700;padding:8px 14px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+main{margin:16px 0;padding-bottom:40px}
+.view{display:none}.view.on{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:820px){.view.on{grid-template-columns:1fr}}
+.card{background:var(--sf);border:2px solid var(--ln);border-radius:12px;padding:16px}
+svg{width:100%;height:auto;display:block}
+.room{cursor:pointer}.room .m{fill-opacity:.32;stroke-width:3}.room:hover .m,.room.sel .m{fill-opacity:.7!important}
+.room:focus-visible .m{stroke-width:6}
+svg text{font:700 11px system-ui,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--sf);stroke-width:3px;stroke-linejoin:round}
+svg .rt{font-weight:800;font-size:12.5px}
+svg .sm{font-size:10px;font-weight:700;fill:var(--mu)}
+svg .lt{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:17px}
+svg .ls{font-weight:700;font-size:11px;fill:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--ink);font-weight:600;margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+#det{border-left:8px solid var(--ln)}
+#det h2,#fdet h2{font-size:1.5rem;margin-bottom:2px}
+.tag{font-weight:800;font-size:1rem}
+#det li,#fdet li{font-weight:600}
+ul{padding-left:1.1em;margin:10px 0}li{margin:4px 0}
+.hint{color:var(--mu);font-size:.92rem}
+.fbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.floor{border:2px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:8px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer}
+.floor[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.steps{list-style:none;padding:0;margin:0}
+.steps li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--ln);margin:0}
+.steps input{width:22px;height:22px;margin-top:2px;flex:none;accent-color:var(--cook)}
+.steps b{display:block}.steps span{color:var(--mu);font-size:.92rem}
+.steps li.done b{text-decoration:line-through;opacity:.6}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.bar div{height:100%;width:0;background:var(--cook);transition:width .25s}
+table{border-collapse:collapse;width:100%;min-width:620px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--ln);vertical-align:top;font-size:.93rem}th{font-weight:700;color:var(--mu)}
+.note{border-left:4px solid var(--gold);padding:8px 12px;margin-top:14px;font-size:.9rem;color:var(--mu);font-weight:500}
+.warn{border-left:4px solid var(--breed);padding:8px 12px;margin-top:10px;font-size:.9rem;font-weight:600}
+details.adj{margin-top:14px;padding:0}
+details.adj summary{cursor:pointer;font-weight:800;padding:12px 16px;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.05rem}
+.ctl{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:0 16px 12px}
+.ctl label{display:flex;flex-direction:column;font-size:.82rem;font-weight:700;color:var(--mu);gap:3px}
+.ctl input[type=number]{font:inherit;font-weight:700;padding:6px 8px;border:2px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+.ctr{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:0 16px 16px;font-weight:700}
+.ctr button{font:inherit;font-weight:700;padding:6px 12px;border:2px solid var(--ln);background:var(--bg);color:var(--ink);border-radius:8px;cursor:pointer}
+#dbar{margin-top:14px;padding:12px 16px}
+#dbar h3{font-size:1.05rem;margin-bottom:8px}
+.drow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dbtn{font:inherit;font-weight:700;padding:6px 10px;border:2px solid var(--ln);background:var(--bg);color:var(--ink);border-radius:8px;cursor:pointer}
+.dbtn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dbtn .e{font-size:1.15rem;margin-right:4px}
+.dswitch{display:flex;gap:8px;align-items:center;font-weight:800;margin-right:8px}
+svg.painting{cursor:crosshair;touch-action:none}
+.back{margin:0 0 6px;font-weight:700;font-size:.92rem}.back a{color:var(--ink)}
+</style></head>
+<body>
+<div class="wrap">
+<header>
+<p class="back"><a href="../../index.html">&larr; All MegaBase designs</a></p>
+<h1>MegaBase Builder: 4-in-1 Clover</h1>
+<p>Four leaves wrap a central convergence tower, joined at the hub’s four corners, with a wide stem walkway in from the water. All glass. Tap any room, the hub or the stem, and change any size under Adjust.</p>
+</header>
+<details class="card adj" id="adj"><summary>Adjust dimensions and grid</summary>
+<div class="ctl" id="ctl"></div>
+<div class="ctr"><label><input type="checkbox" id="gridT" checked> Show tile grid</label><button id="reset" type="button">Reset to defaults</button></div>
+<div id="warns" style="padding:0 16px 14px"></div>
+</details>
+<div class="card" id="dbar">
+<h3>Decor and foliage</h3>
+<div class="drow"><label class="dswitch"><input type="checkbox" id="paintT"> Place decor</label><span id="pal" class="drow"></span><button class="dbtn" id="dclear" type="button">Clear all decor</button><span class="hint" id="dcount"></span></div>
+<div class="hint" style="margin-top:8px">Turn on Place decor, pick an item, then click or drag across tiles on the top-down plan or on a hub floor. Pick Erase to remove. Nothing is placed until you do it. The item names are my own planning labels, not in-game item names.</div>
+</div>
+<nav role="tablist" aria-label="Views">
+<button role="tab" aria-selected="true" data-v="plan">Top-down plan</button>
+<button role="tab" aria-selected="false" data-v="tower">Convergence tower</button>
+<button role="tab" aria-selected="false" data-v="dims">Dimensions</button>
+<button role="tab" aria-selected="false" data-v="order">Build order</button>
+</nav>
+<main>
+<section class="view on" id="plan">
+<div class="card">
+<svg viewBox="0 0 560 760" id="map" role="group" aria-label="Clover base plan, north at top, entrance stem at the bottom"></svg>
+<div class="legend"><span><i style="background:var(--mine)"></i>Mining &amp; Crafting</span><span><i style="background:var(--breed)"></i>Breeding</span><span><i style="background:var(--cook)"></i>Cooking &amp; Farming</span><span><i style="background:var(--stor)"></i>Misc &amp; Storage</span><span><i style="background:var(--hub)"></i>Hub and stem</span><span>Dashed gold = open hub corner into a leaf</span></div>
+</div>
+<div class="card" id="det" aria-live="polite"></div>
+</section>
+<section class="view" id="tower">
+<div class="card">
+<h2 style="margin-bottom:4px">Side view</h2>
+<div class="hint" style="margin-bottom:8px">Tap a level. Each column is one tile across and each row is one panel up.</div>
+<svg viewBox="0 0 440 380" id="el" role="group" aria-label="Side elevation of the hub tower and two leaves"></svg>
+</div>
+<div class="card">
+<div class="fbar" id="fbar"></div>
+<svg viewBox="0 0 300 340" id="fp" role="img" aria-label="Hub floor plan"></svg>
+<div id="fdet" aria-live="polite"></div>
+</div>
+</section>
+<section class="view" id="dims">
+<div class="card" style="grid-column:1/-1;overflow-x:auto">
+<h2 style="margin-bottom:10px">Dimensions</h2>
+<div id="dtab"></div>
+</div>
+</section>
+<section class="view" id="order">
+<div class="card">
+<h2>Build order</h2>
+<div class="bar"><div id="pb"></div></div><div class="hint" id="pt"></div>
+<ol class="steps" id="steps"></ol>
+</div>
+<div class="card" id="pre"></div>
+</section>
+</main>
+</div>
+<script>
+/* Per-design settings. When you copy this file for a new design, change id and name. The id keeps saved sizes and decor separate between designs. */
+const DESIGN={id:'4-in-1-clover',name:'MegaBase Builder: 4-in-1 Clover'};
+const KEY='megabase:'+DESIGN.id;
+const D={H:16,R:8,K:4,LH:5,F1:6,F2:6,SL:22,STW:6,LW:12,LD:6,SW:3,VS:3,RUN:5};
+const FIELDS=[['H','Hub size (tiles)',8,32],['R','Leaf room size (tiles)',4,16],['K','Corner opening (tiles)',1,15],['LH','Leaf height (panels)',3,16],['F1','Hub floor 1 height (panels)',4,16],['F2','Hub floor 2 height (panels)',4,16],['SL','Stem length (tiles)',6,60],['STW','Stem width (tiles)',2,12],['LW','Landing width (tiles)',4,24],['LD','Landing depth (tiles)',2,12],['SW','Stair width (tiles)',2,6],['VS','Open ceiling size (tiles)',2,6],['RUN','Stair run (tiles)',2,10]];
+let P={...D,grid:true,decor:{},tool:'tree',paint:false};
+try{const raw4=localStorage.getItem(KEY+':settings');const s=JSON.parse(raw4||'null');if(s){if(raw4)for(const k in D)if(typeof s[k]=='number')P[k]=s[k];if(typeof s.grid=='boolean')P.grid=s.grid;if(s.decor&&typeof s.decor=='object')P.decor=s.decor;if(typeof s.tool=='string')P.tool=s.tool}}catch(e){}
+function clamp(){for(const [k,,mn,mx] of FIELDS)P[k]=Math.max(mn,Math.min(mx,Math.round(P[k])||D[k]));if(P.H%2)P.H++;P.K=Math.min(P.K,P.H/2-1)}
+const dv=()=>{const h=P.H/2,g=h-P.K,R=P.R;return{h,g,R,ext:g+2*R,sw:P.STW,gap:g-P.STW/2}};
+const B={
+N:{n:'Mining & Crafting',c:'var(--mine)',q:[-1,-1],r:[
+['Stone Pit|& Logging','Place Stone Pit and Logging Site directly on water foundations in this wing.','Pals with Mining, Lumbering and Transporting skills; keep a chest beside each.'],
+['Smelting|Hall','Furnaces in a single row with a Chest at each end so ore flows in and ingots flow out.','Kindling and Handiwork Pals; add Cooling or Watering Pals as needed.'],
+['Crafting|Floor','Workbenches and the Production Assembly Line sit right at the hub corner, so finished goods reach storage fast.','Handiwork Pals on the assembly line; leave a free aisle for large Pals.']]},
+E:{n:'Breeding',c:'var(--breed)',q:[1,-1],r:[
+['Pal Ranch|& Feed','Ranch plus Feed Box in this wing, away from the hub so noisy Pals stay out of the resting floors.','Ranch Pals drop items; put a chest nearby to catch them.'],
+['Breeding|Farm','Breeding Farm with a Feed Box and Pal beds in the same room so parents never wander.','Assign gentle, high-Gathering Pals to keep the farm stocked.'],
+['Hatchery','Incubators with a Pal Bed row beside them, opening straight onto the hub.','Handiwork and Kindling Pals speed up hatching.']]},
+S:{n:'Cooking & Farming',c:'var(--cook)',q:[1,1],r:[
+['Plantation|Fields','Berry and Wheat plantations on foundations, Watering Pal assigned and a Feed Box beside them.','Gathering and Planting Pals harvest; Watering Pals water.'],
+['Pal Food|Store','Chests for crops and Pal food, kept between the fields and the kitchen.','Transporting Pals shuttle crops to cooking.'],
+['Kitchen','Cooking Pots and stoves lined up on one wall, finished meals into a Feed Box near the hub corner.','Kindling Pals run the stoves.']]},
+W:{n:'Misc & Storage',c:'var(--stor)',q:[-1,1],r:[
+['Fishing|Dock','Open foundations over water for fishing and any decorative pieces.','Fishing-capable Pals if you have them; otherwise keep it as a quiet dock.'],
+['Sorted|Storage','Rows of chests labelled by type: ore, ingots, food, gear, spare eggs. This leaf sits beside the stem, so deliveries are close.','Transporting Pals haul between rooms.'],
+['Medical &|Utility','Medicine Workbench, repair bench and a hot spring beside the hub for fast recovery.','Medicine Pals; set a few beds here for injured Pals.']]}};
+const HINT=['Wing room, opens off the gateway room','Wing room, opens off the gateway room','Gateway room, opens straight into a hub corner'];
+const $=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg';
+const map=$('#map'),ep=$('#el'),fp=$('#fp');
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||map).appendChild(e);return e}
+function tx(p,x,y,lines){const t=el('text',{x,y},p);lines.forEach((s,k)=>{const a=el('tspan',{x,dy:k?14:0},t);a.textContent=typeof s=='string'?s:s[0];if(s[1])a.setAttribute('class',s[1])});return t}
+function rr(x,y,w,h,r){return`M${x+r[0]},${y}H${x+w-r[1]}Q${x+w},${y} ${x+w},${y+r[1]}V${y+h-r[2]}Q${x+w},${y+h} ${x+w-r[2]},${y+h}H${x+r[3]}Q${x},${y+h} ${x},${y+h-r[3]}V${y+r[0]}Q${x},${y} ${x+r[0]},${y}Z`}
+const reg={};let selKey=null;
+function mk(g,key,c,f){reg[key]=[c,f];g.dataset.key=key;g.addEventListener('click',()=>choose(key));g.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();choose(key)}})}
+function choose(key){selKey=key;document.querySelectorAll('#map .room').forEach(x=>x.classList.toggle('sel',x.dataset.key==key));const [c,f]=reg[key],d=$('#det');d.style.borderLeftColor=c;d.innerHTML=f()}
+const DEC=[['tree','🌳','Tree'],['palm','🌴','Palm'],['fern','🌿','Fern'],['flower','🌸','Flowers'],['pot','🪴','Potted plant'],['mush','🍄','Mushroom'],['lamp','🏮','Lantern'],['seat','🪑','Seat'],['rock','🪨','Rock'],['erase','🧽','Erase']];
+const DE=Object.fromEntries(DEC.map(d=>[d[0],d[1]]));
+function decorLayer(svg,pre,X,Y,u,x0,x1,y0,y1){
+svg._g={pre,X0:X(0),Y0:Y(0),u,x0,x1,y0,y1};
+const g=el('g',{'pointer-events':'none'},svg);
+for(const k in P.decor){if(k.indexOf(pre+':')!=0)continue;const [i,j]=k.slice(pre.length+1).split(',').map(Number);if(i<x0||i>=x1||j<y0||j>=y1||!DE[P.decor[k]])continue;
+const t=el('text',{x:X(i+.5),y:Y(j+.5)+u*.3,class:'dc'},g);t.style.fontSize=Math.max(8,u*.85)+'px';t.style.stroke='none';t.style.fontFamily='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';t.textContent=DE[P.decor[k]]}
+svg.classList.toggle('painting',P.paint);
+if(P.paint)el('rect',{x:X(x0),y:Y(y0),width:(x1-x0)*u,height:(y1-y0)*u,fill:'transparent','pointer-events':'all'},svg)}
+function paintSetup(svg,redraw){let down=false,last='';
+const at=e=>{const g=svg._g;if(!P.paint||!g)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const m=svg.getScreenCTM();if(!m)return;const q=pt.matrixTransform(m.inverse());
+const i=Math.floor((q.x-g.X0)/g.u),j=Math.floor((q.y-g.Y0)/g.u);if(i<g.x0||i>=g.x1||j<g.y0||j>=g.y1)return;
+const k=g.pre+':'+i+','+j;if(k==last)return;last=k;
+if(P.tool=='erase'){if(!(k in P.decor))return;delete P.decor[k]}else{if(P.decor[k]==P.tool)return;P.decor[k]=P.tool}
+save();redraw();dcount()};
+svg.addEventListener('pointerdown',e=>{if(!P.paint)return;down=true;last='';try{svg.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();at(e)});
+svg.addEventListener('pointermove',e=>{if(down)at(e)});
+['pointerup','pointercancel'].forEach(n=>svg.addEventListener(n,()=>{down=false;last=''}))}
+function save(){try{localStorage.setItem(KEY+':settings',JSON.stringify(P))}catch(e){}}
+function dcount(){const n=Object.keys(P.decor).length;$('#dcount').textContent=n?n+' placed':'None placed'}
+const ul=a=>'<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+const HUBD=()=>`<div class="tag" style="color:var(--gold)">${P.H} × ${P.H} tower at the centre</div><h2 style="color:var(--gold)">Convergence hub</h2>${ul([`Floor 1 is ${P.F1} glass panels tall and ${P.H} × ${P.H} tiles. The Palbox sits beside the stair core, in the east arm.`,`All four corners (${P.K} × ${P.K} tiles, dashed gold) are open archways into the leaves, so the first level reads as one space while each leaf keeps its own walls and ceiling.`,`The stair core is centred in the tower: a stair ${P.SW} wide plus a ${P.VS} × ${P.VS} open ceiling, stacked on every floor.`,`Floor 2 is ${P.F2} panels tall. Floor 3 is a rooftop with no ceiling.`])}`;
+const STEMD=()=>{const {sw,gap}=dv();return`<div class="tag" style="color:var(--gold)">Entrance path</div><h2 style="color:var(--gold)">Stem walkway</h2>${ul([`${sw} wide and ${P.SL} long, centred on the hub’s south arm so large Pals and NPCs pass each other.`,gap>=0?`Leaves ${gap} tile${gap==1?'':'s'} of open space each side between the stem and the two lower leaves.`:`Overlaps the two lower leaves by ${-gap} tile${gap==-1?'':'s'} each side; narrow the stem or shrink the corner opening.`,`Ends in a ${P.LW} × ${P.LD} entrance landing for flying Pals and mounts.`,'Glass floor, walls and roof let the World Tree light run the full length.'])}`};
+function drawPlan(){
+const {h,g,R,ext,sw,gap}=dv(),LD=P.LD,W=560;
+const u=Math.min(500/Math.max(2*ext,P.LW+2),700/(ext+h+P.SL+LD)),top=62,cx=W/2,cy=top+ext*u,bot=cy+(h+P.SL+LD)*u,gy1=h+P.SL+LD;
+map.setAttribute('viewBox',`0 0 ${W} ${Math.ceil(bot+48)}`);map.innerHTML='';for(const k in reg)delete reg[k];
+const X=x=>cx+u*x,Y=y=>cy+u*y;
+if(P.grid){let a='',b='';for(let x=-ext;x<=ext;x++){const s=`M${X(x)},${Y(-ext)}V${Y(gy1)}`;if(x%4)a+=s;else b+=s}
+for(let y=-ext;y<=gy1;y++){const s=`M${X(-ext)},${Y(y)}H${X(ext)}`;if(y%4)a+=s;else b+=s}
+el('path',{d:a,stroke:'var(--ln)','stroke-width':.8,fill:'none'});el('path',{d:b,stroke:'var(--mu)','stroke-opacity':.5,'stroke-width':1,fill:'none'})}
+[[-g,-ext,2*g,ext-h,'Optional|overlook'],[h,-g,ext-h,2*g,'Optional|dock'],[-ext,-g,ext-h,2*g,'Optional|dock']].forEach(([x,y,w,hh,t])=>{el('rect',{x:X(x),y:Y(y),width:w*u,height:hh*u,rx:6,fill:'none',stroke:'var(--mu)','stroke-dasharray':'5 4','stroke-width':1.6});tx(map,X(x+w/2),Y(y+hh/2)-4,t.split('|').map(s=>[s,'sm']))});
+const sg=el('g',{class:'room',tabindex:0,role:'button','aria-label':'Stem walkway'});
+el('rect',{class:'m',x:X(-sw/2),y:Y(h),width:sw*u,height:P.SL*u,fill:'var(--hub)',stroke:'var(--hub)'},sg);
+el('rect',{class:'m',x:X(-P.LW/2),y:Y(h+P.SL),width:P.LW*u,height:LD*u,rx:6,fill:'var(--hub)',stroke:'var(--hub)'},sg);
+tx(sg,cx,Y(h+P.SL/2),[['Stem walkway','rt'],[`${sw} wide × ${P.SL} long`,'sm']].concat(gap>0?[[`gap ${gap} each side`,'sm']]:[]));
+tx(sg,cx,Y(h+P.SL+LD/2)-6,[['Entrance landing','rt'],[`${P.LW} × ${LD}`,'sm']]);
+mk(sg,'stem','var(--hub)',STEMD);
+const hg=el('g',{class:'room',tabindex:0,role:'button','aria-label':'Convergence hub'});
+el('rect',{class:'m',x:X(-h),y:Y(-h),width:2*h*u,height:2*h*u,rx:6,fill:'var(--hub)',stroke:'var(--hub)'},hg);
+mk(hg,'hub','var(--hub)',HUBD);
+for(const d in B){const b=B[d],[sx,sy]=b.q;
+b.r.forEach((r,i)=>{
+const xs=i==0?[g+R,g+2*R]:[g,g+R],ys=i==1?[g+R,g+2*R]:[g,g+R];
+const x0=sx>0?xs[0]:-xs[1],y0=sy>0?ys[0]:-ys[1];
+let q=i==2?[4,4,4,4]:i==1?[14,22,4,4]:[4,22,14,4];
+if(sx<0)q=[q[1],q[0],q[3],q[2]];if(sy>0)q=[q[3],q[2],q[1],q[0]];
+const gr=el('g',{class:'room',tabindex:0,role:'button','aria-label':b.n+': '+r[0].replace('|',' ')});
+el('path',{class:'m',d:rr(X(x0)+2,Y(y0)+2,R*u-4,R*u-4,q),fill:b.c,stroke:b.c},gr);
+const nm=r[0].split('|'),n=nm.length+2,cxr=X(x0+R/2),cyr=Y(y0+R/2)-7*(n-1)+4;
+tx(gr,cxr,cyr,[...nm.map(s=>[s,'rt']),[`${R} × ${R}`,'sm'],[`${P.LH} panels`,'sm']]);
+mk(gr,d+i,b.c,()=>`<div class="tag" style="color:${b.c}">${b.n}</div><h2 style="color:${b.c}">${r[0].replace('|',' ')}</h2><div class="hint"><b>${HINT[i]}</b></div>${ul([`<b>Size:</b> ${R} × ${R} tiles, ${P.LH} glass panels tall, single floor.`,r[1],r[2]].concat(i==2?['Opens into the hub through the corner archway; the leaf keeps its own walls and ceiling.']:[]))}`)});
+const lx=cx+sx*(g+ext)/2*u,ly=sy<0?Y(-ext)-32:Y(ext)+26;
+const t=el('text',{x:lx,y:ly,class:'lt'});t.style.fill=b.c;const a=el('tspan',{x:lx},t);a.textContent=b.n;const c=el('tspan',{x:lx,dy:15,class:'ls'},t);c.textContent=`one leaf · single floor · ${P.LH} panels tall`}
+const ov=el('g',{'pointer-events':'none'});
+[[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([sx,sy])=>el('rect',{x:X(sx>0?h-P.K:-h),y:Y(sy>0?h-P.K:-h),width:P.K*u,height:P.K*u,fill:'var(--gold)','fill-opacity':.4,stroke:'var(--gold)','stroke-width':2.5,'stroke-dasharray':'5 3'},ov));
+const vs=P.VS,sw2=P.SW;
+el('rect',{x:X(-sw2/2),y:Y(-vs/2-P.RUN),width:sw2*u,height:P.RUN*u,fill:'var(--ink)','fill-opacity':.28,stroke:'var(--ink)','stroke-width':1.5},ov);
+for(let i=1;i<P.RUN;i++)el('line',{x1:X(-sw2/2),x2:X(sw2/2),y1:Y(-vs/2-i),y2:Y(-vs/2-i),stroke:'var(--ink)','stroke-opacity':.5},ov);
+el('rect',{x:X(-vs/2),y:Y(-vs/2),width:vs*u,height:vs*u,fill:'var(--bg)','fill-opacity':.6,stroke:'var(--ink)','stroke-width':2,'stroke-dasharray':'4 3'},ov);
+tx(ov,cx,Y(0)+3,[[`${vs}×${vs} void`,'sm']]);
+tx(ov,cx,Y(-vs/2-P.RUN/2)+3,[['Stair','sm']]);
+el('circle',{cx:X(h-2),cy:Y(0),r:u,fill:'var(--hub)',stroke:'var(--ink)','stroke-width':2},ov);
+tx(ov,X(h-2),Y(0)+u+11,[['Palbox','sm']]);
+tx(ov,cx,Y(h-3.6),[['Hub','rt'],[`${P.H} × ${P.H}`,'sm'],[`${P.F1} panels`,'sm']]);
+decorLayer(map,'plan',X,Y,u,-ext,ext,-ext,gy1);
+if(selKey&&reg[selKey])choose(selKey);else{const d=$('#det');d.style.borderLeftColor='var(--ln)';d.innerHTML='<h2>Pick a part</h2><p class="hint"><b>Tap a leaf room, the hub or the stem walkway.</b> The north, east and west notches are optional docks or overlooks.</p>'}}
+/* tower */
+const FL=()=>[
+['Rooftop','Floor 3, no ceiling',`Hub footprint, ${P.H} × ${P.H}, open to the sky.`,['Open edge facing the water so your mount has a clean run.',`The stairwell and the ${P.VS} × ${P.VS} opening arrive in the centre; keep them clear.`,'Put a few Pal beds at the edge away from the take-off side.']],
+['Floor 2 · rest','Floor 2',`${P.H} × ${P.H}, ${P.F2} glass panels tall.`,['Beds, bath and lounge in the four corner cells, which sit above the leaf gateway rooms.','Keep the cross-shaped aisles open so Pals and NPCs can pass.',`The ${P.SW}-wide stair and the ${P.VS} × ${P.VS} open ceiling stay centred, so you can also jump up to the rooftop.`]],
+['Floor 1 · lobby','Floor 1',`${P.H} × ${P.H}, ${P.F1} glass panels tall.`,[`Four ${P.K} × ${P.K} corner archways open straight into the leaves; leaf roofs sit ${Math.abs(P.F1-P.LH)} panel${Math.abs(P.F1-P.LH)==1?'':'s'} ${P.F1>=P.LH?'below':'above'} the hub ceiling.`,`The ${P.STW}-wide stem enters through the south arm.`,`The stair (${P.SW} wide) and the ${P.VS} × ${P.VS} open ceiling are centred; the Palbox sits beside them in the east arm.`]]];
+let sf=2;
+function drawEl(){const {h,g,ext}=dv(),s=Math.min(10,400/(2*ext)),sy=Math.min(18,300/(P.F1+P.F2+3)),W=440,cx=W/2,tot=P.F1+P.F2+3,gy=40+tot*sy;
+ep.setAttribute('viewBox',`0 0 ${W} ${Math.ceil(gy+46)}`);ep.innerHTML='';
+const X=x=>cx+s*x,Y=p=>gy-sy*p;
+if(P.grid){let a='';for(let x=-ext;x<=ext;x++)a+=`M${X(x)},${Y(tot)}V${Y(0)}`;for(let p=0;p<=tot;p++)a+=`M${X(-ext)},${Y(p)}H${X(ext)}`;el('path',{d:a,stroke:'var(--ln)','stroke-width':.8,fill:'none'},ep)}
+[[-ext,-g],[g,ext]].forEach(([a,b])=>{el('rect',{x:X(a),y:Y(P.LH),width:(b-a)*s,height:P.LH*sy,fill:'var(--cook)','fill-opacity':.3,stroke:'var(--cook)','stroke-width':3},ep);tx(ep,X((a+b)/2),Y(P.LH/2)-2,[['Leaf','rt'],[`${P.LH} panels`,'sm']])});
+const grp=(k,fill)=>{const g=el('g',{class:'room'+(sf==k?' sel':''),tabindex:0,role:'button','aria-label':FL()[k][0]},ep);g.addEventListener('click',()=>pick(k));g.addEventListener('keydown',e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();pick(k)}});return g};
+const g1=grp(2);el('rect',{class:'m',x:X(-h),y:Y(P.F1),width:2*h*s,height:P.F1*sy,fill:'var(--hub)',stroke:'var(--hub)'},g1);
+const g2=grp(1);el('rect',{class:'m',x:X(-h),y:Y(P.F1+P.F2),width:2*h*s,height:P.F2*sy,fill:'var(--hub)',stroke:'var(--hub)'},g2);
+const g3=grp(0);el('rect',{class:'m',x:X(-h),y:Y(P.F1+P.F2+.5),width:2*h*s,height:.5*sy,fill:'var(--hub)',stroke:'var(--hub)'},g3);
+el('path',{d:`M${X(-h)},${Y(P.F1+P.F2+.5)}V${Y(P.F1+P.F2+2.5)}M${X(h)},${Y(P.F1+P.F2+.5)}V${Y(P.F1+P.F2+2.5)}`,stroke:'var(--hub)','stroke-width':3,'stroke-dasharray':'4 3'},g3);
+const sh=Math.max(P.SW,P.VS);
+el('rect',{x:X(-sh/2),y:Y(P.F1+P.F2),width:sh*s,height:(P.F1+P.F2)*sy,fill:'none',stroke:'var(--ink)','stroke-width':1.5,'stroke-dasharray':'4 3','pointer-events':'none'},ep);
+[P.F1,P.F1+P.F2].forEach(p=>el('rect',{x:X(-P.VS/2),y:Y(p)-3,width:P.VS*s,height:6,fill:'var(--bg)',stroke:'var(--ink)','stroke-width':1.5,'pointer-events':'none'},ep));
+el('line',{x1:X(-ext)-6,y1:Y(0),x2:X(ext)+6,y2:Y(0),stroke:'var(--ink)','stroke-width':3},ep);
+tx(ep,X(-h/2-sh/4),Y(P.F1/2)+4,[['Floor 1 · lobby','rt'],[`${P.F1} panels`,'sm']]);
+tx(ep,X(-h/2-sh/4),Y(P.F1+P.F2/2)+4,[['Floor 2 · rest','rt'],[`${P.F2} panels`,'sm']]);
+tx(ep,X(h/2+sh/4),Y(P.F1+P.F2+1.6),[['Floor 3 · rooftop','rt']]);
+tx(ep,X(h/2+sh/4),Y(P.F1/2)-4,[['Stair core','sm'],['centred','sm']]);
+tx(ep,cx,gy+22,[[`1 column = 1 tile · 1 row = 1 panel · hub ${P.H} wide`,'sm']]);
+tx(ep,X(-h/2),Y(P.F1+P.F2+2.9),[['mount take-off ↗','sm']])}
+function drawFloor(){const {h}=dv(),ft=Math.min(16,256/P.H),cx=150,cy=30+h*ft,X=x=>cx+ft*x,Y=y=>cy+ft*y;fp.innerHTML='';
+const fl=['roof','f2','f1'][sf],K=P.K,vs=P.VS,sw=P.SW;
+if(P.grid){let a='';for(let i=-h;i<=h;i++)a+=`M${X(i)},${Y(-h)}V${Y(h)}M${X(-h)},${Y(i)}H${X(h)}`;el('path',{d:a,stroke:'var(--ln)','stroke-width':.8,fill:'none'},fp)}
+el('rect',{x:X(-h),y:Y(-h),width:2*h*ft,height:2*h*ft,rx:3,fill:'var(--hub)','fill-opacity':fl=='roof'?.12:.3,stroke:'var(--hub)','stroke-width':4,'stroke-dasharray':fl=='roof'?'7 5':'0'},fp);
+const cor=[[1,1,'↘'],[1,-1,'↗'],[-1,1,'↙'],[-1,-1,'↖']];
+cor.forEach(([sx,sy,ar],i)=>{const x=sx>0?h-K:-h,y=sy>0?h-K:-h;
+if(fl=='f1')el('rect',{x:X(x),y:Y(y),width:K*ft,height:K*ft,fill:'var(--gold)','fill-opacity':.4,stroke:'var(--gold)','stroke-width':2.5,'stroke-dasharray':'5 3'},fp);
+const lab=fl=='f1'?[ar,['to leaf','sm']]:fl=='f2'?[['Beds','rt']]:[];
+if(lab.length)tx(fp,X(x+K/2),Y(y+K/2)+(fl=='f1'?0:4),fl=='f1'?[[ar,'rt'],['to leaf','sm']]:[[['Beds','Bath','Lounge','Beds'][i],'rt']])});
+el('rect',{x:X(-sw/2),y:Y(-vs/2-P.RUN),width:sw*ft,height:P.RUN*ft,fill:'var(--ink)','fill-opacity':.28,stroke:'var(--ink)','stroke-width':1.5},fp);
+for(let i=1;i<P.RUN;i++)el('line',{x1:X(-sw/2),x2:X(sw/2),y1:Y(-vs/2-i),y2:Y(-vs/2-i),stroke:'var(--ink)','stroke-opacity':.5},fp);
+el('rect',{x:X(-vs/2),y:Y(-vs/2),width:vs*ft,height:vs*ft,fill:'var(--bg)','fill-opacity':.7,stroke:'var(--ink)','stroke-width':2,'stroke-dasharray':'4 3'},fp);
+tx(fp,cx,Y(0)+3,[[`${vs}×${vs}`,'sm']]);tx(fp,cx,Y(-vs/2-P.RUN/2)+3,[['Stair','sm']]);
+if(fl=='f1'){el('circle',{cx:X(h-2),cy:Y(0),r:ft,fill:'var(--hub)',stroke:'var(--ink)','stroke-width':2},fp);tx(fp,X(h-2),Y(0)+ft+11,[['Palbox','sm']]);{const w2=Math.min(P.STW,2*h);el('rect',{x:X(-w2/2),y:Y(h)-3,width:w2*ft,height:6,fill:'var(--gold)',stroke:'var(--gold)'},fp);tx(fp,cx,Y(h)+14,[[`↑ ${P.STW}-wide entry from the stem`,'sm']])}}
+if(fl=='roof')tx(fp,cx,20,[['Take-off ↑','rt']]);
+const ht=fl=='roof'?'no ceiling':(fl=='f1'?P.F1:P.F2)+' panels tall';
+tx(fp,cx,Y(h)+(fl=='f1'?30:22),[[`${['Rooftop','Floor 2','Floor 1'][sf]} · ${P.H} × ${P.H} tiles · ${ht}`,'sm']]);
+decorLayer(fp,'f'+sf,X,Y,ft,-h,h,-h,h)}
+function pick(k){sf=k;[...$('#fbar').children].forEach((b,i)=>b.setAttribute('aria-pressed',[2,1,0][i]==k?'true':'false'));drawEl();drawFloor();const f=FL()[k];$('#fdet').innerHTML=`<h2>${f[0]}</h2><div class="hint"><b>${f[1]}.</b> ${f[2]}</div>${ul(f[3])}`}
+[2,1,0].forEach(k=>{const b=document.createElement('button');b.className='floor';b.textContent=['Floor 3 · rooftop','Floor 2 · rest','Floor 1 · lobby'][k];b.setAttribute('aria-pressed','false');b.onclick=()=>pick(k);$('#fbar').appendChild(b)});
+/* tables, steps, warnings */
+function drawDims(){const {h,g,ext,sw,gap}=dv(),R=P.R,LD=P.LD;
+const rows=[
+['Whole clover',`${2*ext} × ${2*ext} for hub and leaves, plus the stem`,`${P.LH} leaves, ${P.F1} + ${P.F2} hub`,`About ${ext+h+P.SL+LD} long from the north leaf tips to the landing. It must fit one Palbox radius.`],
+['Convergence hub',`${P.H} × ${P.H}`,`${P.F1} (floor 1), ${P.F2} (floor 2), rooftop open`,'The only multi-floor part. The Palbox sits in the east arm beside the stair core.'],
+['Corner openings',`${P.K} × ${P.K} at each hub corner`,`${P.LH}, the full leaf height`,'Each opens the hub straight into a leaf gateway room. The first level reads as one space.'],
+['Stair core',`${P.SW}-wide stair, ${P.RUN} long, plus a ${P.VS} × ${P.VS} void, centred`,'Stacked on every floor',`The void is open on floors 1 and 2 so you can jump up. Needs ${(P.VS/2+P.RUN).toFixed(1)} tiles north of centre; the hub has ${h}.`],
+['Leaf',`Three ${R} × ${R} rooms in an L (${2*R} × ${2*R} outline)`,`${P.LH}, single floor`,'The gateway room overlaps a hub corner; the two wings open off it. Aisles at least 2 wide.'],
+['Stem walkway',`${sw} wide × ${P.SL} long`,`${P.LH} or more`,'Centred on the hub’s south arm, starting at the hub edge and running to the landing.'],
+['Stem gap to lower leaves',gap>=0?`${gap} tile${gap==1?'':'s'} each side`:`Overlaps by ${-gap} each side`,'Open or covered',`Space between the stem and the two lower leaves: (hub ${P.H} − 2 × corner opening ${P.K} − stem ${sw}) ÷ 2.`],
+['Entrance landing',`${P.LW} wide × ${LD} deep, at the end of the stem`,'Open or covered','Where you arrive by flying Pal or mount.'],
+['Notches',`${2*g} × ${ext-h} north, ${ext-h} × ${2*g} east and west`,'Optional','Docks or overlooks between leaves.'],
+['Rooftop',`${P.H} × ${P.H} on top of the hub`,'No ceiling','Open edge facing the water for mount take-off.']];
+$('#dtab').innerHTML=`<table><thead><tr><th>Part</th><th>Footprint (tiles)</th><th>Height (glass panels)</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table><div class="note">Sizes follow the numbers under Adjust, so changing one updates every diagram and this table. The Palbox is off-centre, so measure your farthest leaf tip and the landing from it against the build boundary.</div>`;
+$('#pre').innerHTML=`<h2 style="margin-bottom:8px">Before you start</h2>${ul(['This plan assumes all building technology is already unlocked, including water foundations, every glass piece and every station.','Everything must sit inside <b>one Palbox radius</b>. Place the Palbox first, then check the stem and leaf tips against the boundary.','Foundations on water count as solid ground, so workbenches, chests, Logging Sites and Stone Pits can sit on them.','Build back from the World Tree so its glow frames the base instead of crowding it.',`<b>All glass:</b> foundations, walls and ceilings. Leaves are ${P.LH} panels tall; hub floors are ${P.F1} and ${P.F2}.`,`<b>Width:</b> ${sw}-wide stem, ${R} × ${R} rooms, aisles at least 2 across, doors at both ends of each room so Pals and NPCs flow one way.`])}<div class="note">Test with your largest Pal before you finish each room.</div>`}
+let chk=[];try{chk=JSON.parse(localStorage.getItem(KEY+':steps')||'[]')}catch(e){}
+function steps(){const {sw,gap}=dv();return[['Pick the site','Fly near the World Tree and choose open water you can build on. Test with one foundation first.'],['Place the Palbox','Set it in the hub’s east arm, then check the boundary against the leaf tips and landing.'],['Build the hub platform',`${P.H} × ${P.H} glass foundations, ${P.F1} panels tall, with the stair core centred.`],['Lay the stem walkway',`${sw} wide and ${P.SL} long from the hub’s south arm, with ${gap>0?gap:0} tile${gap==1?'':'s'} of open space each side to the lower leaves, ending in a ${P.LW} × ${P.LD} landing.`],['Build the four leaves',`Each leaf is three ${P.R} × ${P.R} rooms in an L, ${P.LH} panels tall, with the gateway room overlapping a hub corner.`],['Open the hub corners',`Remove the wall in each ${P.K} × ${P.K} corner so every gateway room opens into the hub.`],['Fill the rooms','Mining & Crafting northwest, Breeding northeast, Cooking & Farming southeast, Misc & Storage southwest.'],['Raise the tower',`Floor 2 at ${P.F2} panels with the ${P.VS} × ${P.VS} voids stacked, then the open rooftop.`],['Assign Pals','Put each Pal to its leaf, then walk the base with your biggest Pal to find blocked paths.']]}
+const ol=$('#steps');
+function saveChk(){try{localStorage.setItem(KEY+':steps',JSON.stringify(chk))}catch(e){}}
+function drawSteps(){ol.innerHTML='';const SS=steps(),tt=SS.length;let n=0;SS.forEach((s,i)=>{const li=document.createElement('li');li.className=chk[i]?'done':'';if(chk[i])n++;li.innerHTML=`<input type="checkbox" id="s${i}" ${chk[i]?'checked':''}><label for="s${i}"><b>${s[0]}</b><span>${s[1]}</span></label>`;li.querySelector('input').onchange=e=>{chk[i]=e.target.checked;saveChk();drawSteps()};ol.appendChild(li)});
+$('#pb').style.width=n/tt*100+'%';$('#pt').textContent=n+' of '+tt+' steps done'}
+function warns(){const {h,sw,gap}=dv(),w=[];
+if(P.VS/2+P.RUN>h-.5)w.push(`The stair core needs ${(P.VS/2+P.RUN).toFixed(1)} tiles north of centre but the hub only has ${h}. Shorten the stair run or enlarge the hub.`);
+if(gap<0)w.push(`The stem (${sw} wide) is wider than the opening between the lower leaves and overlaps them. Narrow the stem or shrink the corner opening.`);else if(gap==0)w.push('The stem touches the two lower leaves. Narrow it by 2 for a one-tile gap each side.');if(P.LW<sw)w.push('The landing is narrower than the stem.');
+if(P.SW>P.H/2)w.push('The stair is wider than half the hub.');
+$('#warns').innerHTML=w.map(x=>`<div class="warn">${x}</div>`).join('')}
+const ctl=$('#ctl');
+FIELDS.forEach(([k,l,mn,mx])=>{const lb=document.createElement('label');lb.textContent=l;const i=document.createElement('input');i.type='number';i.id='f_'+k;i.min=mn;i.max=mx;i.onchange=()=>{P[k]=+i.value;render()};lb.appendChild(i);ctl.appendChild(lb)});
+$('#gridT').onchange=e=>{P.grid=e.target.checked;render()};
+$('#reset').onclick=()=>{P={...D,grid:true,decor:P.decor,tool:P.tool,paint:P.paint};render()};
+function render(){clamp();FIELDS.forEach(([k])=>{$('#f_'+k).value=P[k]});$('#f_K').max=P.H/2-1;$('#gridT').checked=P.grid;
+try{localStorage.setItem(KEY+':settings',JSON.stringify(P))}catch(e){}
+drawPlan();pick(sf);drawDims();drawSteps();warns()}
+const pal=$('#pal');
+DEC.forEach(d=>{const b=document.createElement('button');b.type='button';b.className='dbtn';b.dataset.t=d[0];b.innerHTML='<span class="e">'+d[1]+'</span>'+d[2];b.onclick=()=>{P.tool=d[0];if(!P.paint){P.paint=true;$('#paintT').checked=true}save();syncPal();redrawAll()};pal.appendChild(b)});
+function syncPal(){[...pal.children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.t==P.tool?'true':'false'))}
+function redrawAll(){drawPlan();drawFloor()}
+$('#paintT').onchange=e=>{P.paint=e.target.checked;save();redrawAll()};
+$('#dclear').onclick=()=>{if(!Object.keys(P.decor).length)return;if(confirm('Remove all placed decor?')){P.decor={};save();redrawAll();dcount()}};
+paintSetup(map,drawPlan);paintSetup(fp,drawFloor);
+P.paint=false;syncPal();dcount();
+render();
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x==b));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==b.dataset.v))});
+</script>
+</body></html>
