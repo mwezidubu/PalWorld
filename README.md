@@ -6,7 +6,19 @@ Browser tools for planning Palworld megabase layouts. Each design is a single we
 
 | Design | Folder |
 | --- | --- |
+| MegaBase Builder: Custom Base | `designs/custom-base/` |
 | MegaBase Builder: 4-in-1 Clover | `designs/4-in-1-clover/` |
+
+## Custom Base (start from a blank grid)
+
+`designs/custom-base/` is a full editor, separate from the fixed designs:
+
+- Start any number of named bases from a blank grid (default 20 x 20, from 5 x 5 up to 100 x 100).
+- Draw, move and resize rooms on the top-down plan, and add stairways.
+- Add floors above and below ground, and see them in the Side view.
+- Place decor one item at a time from a drop-down, with a list of what is placed.
+- Dimensions tab shows live checks against requirements you can change. Build order is made from your plan.
+- Export a base to a `.megabase.json` file and import it again to share it with guildmates.
 
 ## Use it
 
