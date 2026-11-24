@@ -58,3 +58,8 @@ designs/<name>/index.html   one self-contained builder per design
 .nojekyll               tells GitHub Pages to serve the files as they are
 README.md               this file
 ```
+
+### Custom Base updates
+- Side view: adjustable panel scale, drag rooms and floors, drag floor/room height, labels move beside small rooms.
+- Floors: panel height has an adjustable minimum; middle floors cannot be removed on their own; stairs are offered when a floor is added.
+- Wall materials: Wooden, Stone, Metal, Glass, Japanese-Style, Futuristic, Ancient per base, floor or room.
