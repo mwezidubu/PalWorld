@@ -69,9 +69,13 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 .pbar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:8px 0 4px}.pbar div{height:100%;width:0;background:var(--cook);transition:width .25s}
 .note{border-left:4px solid var(--gold);padding:8px 12px;margin-top:12px;font-size:.9rem;color:var(--mu);font-weight:500}
 #prompt{border-color:var(--gold);border-width:3px}#prompt b{font-weight:800}
-#svwrap{overflow:auto;max-height:82vh;border:2px solid var(--ln);border-radius:8px;background:var(--bg)}
+#svwrap{overflow:auto;height:72vh;min-height:340px;border:2px solid var(--ln);border-radius:8px;background:var(--bg)}
 #sv [data-room],#sv [data-h]{touch-action:none}
 .frow select{max-width:210px}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.mbox{background:var(--sf);border:4px solid var(--bad);border-radius:12px;padding:18px 20px;max-width:540px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.mbox h2{color:var(--bad);font-size:1.4rem}.mbox p{font-weight:600;margin:8px 0 14px}
+#alertBar{border-color:var(--bad);border-width:3px}#alertBar b{color:var(--bad)}
 </style></head>
 <body><div class="wrap">
 <p class="back"><a href="../../index.html">&larr; All MegaBase designs</a></p>
@@ -105,6 +109,8 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <div class="hint">New bases start with one empty ground floor. You can add floors above and below ground later.</div>
 </div>
 </div>
+
+<div class="card" id="alertBar" role="alert" hidden></div>
 
 <nav role="tablist" aria-label="Views">
 <button role="tab" aria-selected="true" data-v="plan">Top-down plan</button>
@@ -163,13 +169,15 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <label class="chk"><input type="checkbox" id="eqT"> Equal scale</label>
 <label class="f" id="vzWrap">Panel height<input type="range" id="vz" min="6" max="48" value="20"></label>
 <button class="b" id="vfit" type="button">Fit all floors</button>
+<span class="sp"></span>
+<button class="b" id="svzo" type="button" aria-label="Zoom out">−</button><label class="f">View zoom<input type="range" id="svz" min="20" max="400" value="100"></label><button class="b" id="svzi" type="button" aria-label="Zoom in">+</button><button class="b" id="svzf" type="button">Fit to window</button>
 </div>
 <div class="bar">
 <label class="chk"><input type="checkbox" id="sliceT"> Show only one slice</label>
 <label class="f" id="sliceWrap">Slice position<input type="range" id="sliceR" min="0" max="19" value="0"></label>
 <span class="hint" id="sliceTxt"></span>
 </div>
-<div class="hint" style="margin-bottom:8px">Columns are tiles and rows are panels. Panels are drawn taller than tiles so every floor stays readable. Click a room or floor to select it. Drag a room sideways to move it, or onto another floor to change its floor. Drag the square handles on a selected room to change its length or height. Drag the bar on a floor's edge to change that floor's panel height. Delete removes the selected room.</div>
+<div class="hint" style="margin-bottom:8px">Columns are tiles and rows are panels. Panels are drawn taller than tiles so every floor stays readable. Zoom with the slider or Ctrl + mouse wheel (this zooms only the diagram, not the page) and scroll inside the frame. Click a room or floor to select it. Drag a room sideways to move it, or onto another floor to change its floor. Drag the square handles on a selected room to change its length or height. Drag the bar on a floor's edge to change that floor's panel height. Delete removes the selected room.</div>
 <div id="svwrap"><svg id="sv" role="img" aria-label="Side view of all floors"></svg></div>
 </div>
 <div class="card" id="sprops" aria-live="polite"></div>
@@ -214,6 +222,7 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 </div>
 </section>
 </main>
+<div id="modal" hidden></div>
 </div>
 <script>
 /* Per-design settings. When you copy this file for a new design, change id and name.
@@ -262,7 +271,7 @@ function load(){
  if(!S.cur||!S.bases[S.cur])S.cur=Object.keys(S.bases)[0]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const B=()=>S.bases[S.cur];
-const U={tab:'plan',tool:'select',floor:null,sel:null,armed:'',zoom:24,fit:true,grid:true,ghost:true,newType:'other',view:{axis:'front',slice:false,pos:0,show:'all',eq:false,vz:0},drag:null,sd:null,prompt:null,draft:null,hist:{u:[],r:[]}};
+const U={tab:'plan',tool:'select',floor:null,sel:null,armed:'',zoom:24,fit:true,grid:true,ghost:true,newType:'other',view:{axis:'front',slice:false,pos:0,show:'all',eq:false,vz:0,z:0},drag:null,sd:null,prompt:null,draft:null,hist:{u:[],r:[]}};
 const fl=(b,id)=>b.floors.find(f=>f.id===id);
 const matKey=(b,r)=>r.mat||(fl(b,r.floor)||{}).mat||b.mat||'glass';
 const asc=b=>b.floors.slice().sort((a,c)=>a.level-c.level);
@@ -418,7 +427,8 @@ function propsChange(e){
 function propsClick(e){
  const a=e.target.dataset.act;if(!a)return;const o=getObj(U.sel);if(!o)return;const k=U.sel.k;
  if(k=='floor'){floorAct(a,o.id);return}
- if(a=='del')edit(b=>{const L=k=='room'?b.rooms:k=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});
+ if(a=='del'&&k=='stair')deleteStair(o.id);
+ else if(a=='del')edit(b=>{const L=k=='room'?b.rooms:b.decor;L.splice(L.indexOf(o),1);U.sel=null});
  if(a=='dup')edit(b=>{const c=JSON.parse(JSON.stringify(o));c.id=uid();c.name=(o.name+' copy').slice(0,40);c.x=clamp(o.x+1,0,b.w-o.w);c.y=clamp(o.y+1,0,b.h-o.h);(k=='room'?b.rooms:b.stairs).push(c);U.sel={k,id:c.id}})}
 ['#props','#sprops'].forEach(q=>{$(q).addEventListener('change',propsChange);$(q).addEventListener('click',propsClick)});
 
@@ -481,7 +491,9 @@ function renderSide(){
  $('#sliceTxt').textContent=U.view.slice?(ax=='front'?`Showing row ${U.view.pos} (counting from the north edge)`:`Showing column ${U.view.pos} (counting from the west edge)`):'Showing every room';
  $('#axisSel').value=ax;$('#showSel').value=U.view.show;$('#eqT').checked=U.view.eq;$('#vzWrap').hidden=U.view.eq;$('#vz').value=Math.round(sy);
  const sv=$('#sv');sv.setAttribute('viewBox',`0 0 ${Wp} ${Hp}`);
- SV={Gl,Mg,sx,sy,top,n,Wp,Hp,vf,L,ax};
+ const wrap=$('#svwrap'),cw=(wrap.clientWidth||900)-6,ch=(wrap.clientHeight||600)-6,kk=U.view.z?U.view.z/100:Math.min(cw/Wp,ch/Hp,2.5);
+ sv.style.width=Wp*kk+'px';sv.style.height=Hp*kk+'px';$('#svz').value=Math.round(kk*100);
+ SV={Gl,Mg,sx,sy,top,n,Wp,Hp,vf,L,ax,k:kk};
  const inS=o=>!U.view.slice||(ax=='front'?(o.y<=U.view.pos&&U.view.pos<o.y+o.h):(o.x<=U.view.pos&&U.view.pos<o.x+o.w));
  const hgt=totalV*sy;
  let h=`<defs><pattern id="sg" x="${Gl}" y="${Yv(0)}" width="${sx}" height="${sy}" patternUnits="userSpaceOnUse"><path d="M${sx} 0V${sy}M0 ${sy}H${sx}" fill="none" stroke="var(--ln)" stroke-width=".8"/></pattern></defs>`;
@@ -490,25 +502,25 @@ function renderSide(){
  if(U.grid)h+=`<rect x="${Gl}" y="${Yv(top)}" width="${n*sx}" height="${hgt}" fill="url(#sg)"/>`;
  vf.slice().reverse().forEach((f,i)=>{const[,y1]=L.pos[f.id],act=f.id==U.floor,bh=f.height*sy,cy=Yv(y1)+bh/2;
   h+=`<g class="band" data-fid="${f.id}" style="cursor:pointer"><rect x="1" y="${Yv(y1)}" width="${Gl+n*sx-1}" height="${bh}" fill="${f.level<0?'var(--earth)':'var(--ln)'}" fill-opacity="${i%2?.08:.2}" stroke="${act?'var(--gold)':'var(--mu)'}" stroke-width="${act?3:1}" stroke-opacity="${act?1:.5}"/>`+(bh>=34?`<text class="al" x="8" y="${cy-1}">${esc(trunc(f.name,17))}</text><text class="al sm" x="8" y="${cy+12}">${f.height} panels · ${lvl(f)}</text>`:`<text class="al sm" x="8" y="${cy+3}">${esc(trunc(f.name,11))} · ${f.height}</text>`)+'</g>'});
- const geo={},labs=[],outs=[],boxes=[],coll=(x0,x1,y0,y1)=>boxes.some(q=>x0<q[1]&&q[0]<x1&&y0<q[3]&&q[2]<y1);
+ const geo={},labs=[],rl=[],slabs=[],boxes=[],coll=(x0,x1,y0,y1)=>boxes.some(q=>x0<q[1]&&q[0]<x1&&y0<q[3]&&q[2]<y1);
  b.rooms.forEach(o=>{const f=fl(b,o.floor);if(!f||!vf.includes(f)||!inS(o))return;const y0=L.pos[f.id][0],hp=o.hp||f.height,a0=ax=='front'?o.x:o.y,ln=ax=='front'?o.w:o.h,c=`var(${TYPES[o.type][1]})`,sel=U.sel&&U.sel.k=='room'&&U.sel.id==o.id;
   const rx=X(a0),rw=ln*sx,ry=Yv(y0+hp),rh=hp*sy;geo[o.id]={rx,rw,ry,rh};
   h+=`<g data-room="${o.id}" style="cursor:grab"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="${c}" fill-opacity=".38" stroke="${c}" stroke-width="${sel?4:2}"${o.type=='arch'?' stroke-dasharray="4 3"':''}/>`+(o.type!='arch'&&rw>10&&rh>10?`<rect x="${rx+3}" y="${ry+3}" width="${rw-6}" height="${rh-6}" fill="none" stroke="${MATS[matKey(b,o)][3]}" stroke-width="2" pointer-events="none"/>`:'')+'</g>';
-  const t=trunc(o.name,40),tw=t.length*6.3,tw9=t.length*5.3;
-  if(rw>=tw+8&&rh>=15){labs.push({t,x:rx+rw/2,y:ry+rh/2+4,st:''});boxes.push([rx+rw/2-tw/2,rx+rw/2+tw/2,ry+rh/2-6,ry+rh/2+6])}
-  else if(rw>=tw9+6&&rh>=12){labs.push({t,x:rx+rw/2,y:ry+rh/2+3,st:'font-size:9px'});boxes.push([rx+rw/2-tw9/2,rx+rw/2+tw9/2,ry+rh/2-6,ry+rh/2+5])}
-  else{const t2=trunc(o.name,22);outs.push({t:t2,tw:t2.length*6.3,rx,rw,ry,rh})}
-  if((o.open||f.roof)&&rw>70)labs.push({t:'open to the sky',x:rx+rw/2,y:ry-4,st:'font-size:10px;fill:var(--mu)'})});
- outs.forEach(o=>{const my=o.ry+o.rh/2+4;let done=false;
-  for(const side of ['r','l']){if(done)break;const x0=side=='r'?o.rx+o.rw+4:o.rx-4-o.tw,x1=x0+o.tw;if(x0<Gl+2||x1>Wp-2)continue;
-   for(const dy of [0,13,-13,26,-26]){const y=my+dy;if(!coll(x0,x1,y-10,y+3)){boxes.push([x0,x1,y-10,y+3]);labs.push({t:o.t,x:side=='r'?x0:x1,y,st:'text-anchor:'+(side=='r'?'start':'end')});done=true;break}}}
-  if(!done)labs.push({t:o.t,x:clamp(o.rx+o.rw/2,o.tw/2+Gl,Wp-o.tw/2-2),y:o.ry-6,st:''})});
- b.stairs.forEach(st=>{const sf=stairFloors(b,st);if(!sf||!vf.includes(sf.lo)||!vf.includes(sf.hi)||!(!U.view.slice||(ax=='front'?(st.y<=U.view.pos&&U.view.pos<st.y+st.h):(st.x<=U.view.pos&&U.view.pos<st.x+st.w))))return;
+  const t=trunc(o.name,40);rl.push({t,tw:t.length*6.3,tw9:t.length*5.3,rx,rw,ry,rh,sel:!!sel,open:!!(o.open||f.roof)})}); b.stairs.forEach(st=>{const sf=stairFloors(b,st);if(!sf||!vf.includes(sf.lo)||!vf.includes(sf.hi)||!(!U.view.slice||(ax=='front'?(st.y<=U.view.pos&&U.view.pos<st.y+st.h):(st.x<=U.view.pos&&U.view.pos<st.x+st.w))))return;
   const yl=L.pos[sf.lo.id][0],yh=L.pos[sf.hi.id][0],a0=ax=='front'?st.x:st.y,ln=ax=='front'?st.w:st.h;
   const along=ax=='front'?(st.dir=='E'||st.dir=='W'):(st.dir=='N'||st.dir=='S'),rise=ax=='front'?st.dir=='E':st.dir=='S';
-  if(along){const xa=rise?X(a0):X(a0+ln),xb=rise?X(a0+ln):X(a0);h+=`<line x1="${xa}" y1="${Yv(yl)}" x2="${xb}" y2="${Yv(yh)}" stroke="var(--ink)" stroke-width="3" pointer-events="none"/><text x="${(xa+xb)/2}" y="${(Yv(yl)+Yv(yh))/2-6}" class="sm">stair</text>`}
-  else h+=`<rect x="${X(a0)}" y="${Yv(yh)}" width="${ln*sx}" height="${(yh-yl)*sy}" fill="var(--ink)" fill-opacity=".12" stroke="var(--ink)" stroke-dasharray="3 3" pointer-events="none"/><text x="${X(a0+ln/2)}" y="${Yv(yh)+12}" class="sm">stair (end-on)</text>`;
+  if(along){const xa=rise?X(a0):X(a0+ln),xb=rise?X(a0+ln):X(a0);h+=`<line x1="${xa}" y1="${Yv(yl)}" x2="${xb}" y2="${Yv(yh)}" stroke="var(--ink)" stroke-width="3" pointer-events="none"/>`;slabs.push({t:'stair',x:(xa+xb)/2,y:(Yv(yl)+Yv(yh))/2-6})}
+  else h+=`<rect x="${X(a0)}" y="${Yv(yh)}" width="${ln*sx}" height="${(yh-yl)*sy}" fill="var(--ink)" fill-opacity=".12" stroke="var(--ink)" stroke-dasharray="3 3" pointer-events="none"/>`,slabs.push({t:'stair (end-on)',x:X(a0+ln/2),y:Yv(yh)+12});
   const v=voidRect(st);if(v){const va=ax=='front'?v.x:v.y;h+=`<rect x="${X(va)}" y="${Yv(yh+.7)}" width="${v.w*sx}" height="${.7*sy}" fill="var(--bg)" stroke="var(--ink)" stroke-dasharray="3 2" pointer-events="none"/>`}});
+ rl.sort((p,q)=>(q.sel?1:0)-(p.sel?1:0)).forEach(r=>{let done=false;
+  for(const [w,st] of [[r.tw+8,''],[r.tw9+6,'font-size:9px']]){if(done||r.rw<w||r.rh<12)continue;
+   for(const dy of [0,-12,12,-24,24]){const y=r.ry+r.rh/2+4+dy;if(y<r.ry+9||y>r.ry+r.rh-2)continue;const x0=r.rx+r.rw/2-(w-6)/2,x1=x0+w-6;if(!coll(x0,x1,y-10,y+3)){boxes.push([x0,x1,y-10,y+3]);labs.push({t:r.t,x:r.rx+r.rw/2,y,st});done=true;break}}}
+  if(!done){const t2=trunc(r.t,22),tw=t2.length*6.3,my=r.ry+r.rh/2+4;
+   for(const side of ['r','l']){if(done)break;const x0=side=='r'?r.rx+r.rw+4:r.rx-4-tw,x1=x0+tw;if(x0<Gl+2||x1>Wp-2)continue;
+    for(const dy of [0,13,-13,26,-26,39,-39]){const y=my+dy;if(!coll(x0,x1,y-10,y+3)){boxes.push([x0,x1,y-10,y+3]);labs.push({t:t2,x:side=='r'?x0:x1,y,st:'text-anchor:'+(side=='r'?'start':'end')});done=true;break}}}
+   if(!done)labs.push({t:t2,x:clamp(r.rx+r.rw/2,tw/2+Gl,Wp-tw/2-2),y:r.ry-6,st:''})}
+  if(r.open&&r.rw>70&&!coll(r.rx+r.rw/2-36,r.rx+r.rw/2+36,r.ry-14,r.ry-2)){boxes.push([r.rx+r.rw/2-36,r.rx+r.rw/2+36,r.ry-14,r.ry-2]);labs.push({t:'open to the sky',x:r.rx+r.rw/2,y:r.ry-4,st:'font-size:10px;fill:var(--mu)'})}});
+ slabs.forEach(l=>{const tw=l.t.length*5.6;for(const dy of [0,-12,12,-24,24,-36,36]){const y=l.y+dy,x0=l.x-tw/2,x1=l.x+tw/2;if(!coll(x0,x1,y-9,y+3)){boxes.push([x0,x1,y-9,y+3]);labs.push({t:l.t,x:l.x,y,st:'font-size:10px;fill:var(--mu)'});break}}});
  labs.forEach(l=>{h+=`<text x="${l.x}" y="${l.y}"${l.st?` style="${l.st}"`:''}>${esc(l.t)}</text>`});
  if(pmin<=0&&top>=0)h+=`<line x1="${Gl}" x2="${Gl+n*sx}" y1="${Yv(0)}" y2="${Yv(0)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="7 4" pointer-events="none"/><text class="sm ar" x="${Gl+n*sx}" y="${Yv(0)-4}">ground level</text>`;
  const tick=n>60?10:5;for(let i=0;i<=n;i+=tick)h+=`<text class="sm" x="${X(i)}" y="${Mg-10}">${i}</text>`;
@@ -521,9 +533,15 @@ $('#axisSel').addEventListener('change',e=>{U.view.axis=e.target.value;renderSid
 $('#showSel').addEventListener('change',e=>{U.view.show=e.target.value;renderSide()});
 $('#eqT').addEventListener('change',e=>{U.view.eq=e.target.checked;renderSide()});
 $('#vz').addEventListener('input',e=>{U.view.vz=num(e.target.value,20);U.view.eq=false;renderSide()});
-$('#vfit').addEventListener('click',()=>{U.view.vz=0;U.view.eq=false;U.view.show='all';renderSide()});
+$('#vfit').addEventListener('click',()=>{U.view.vz=0;U.view.eq=false;U.view.show='all';U.view.z=0;renderSide()});
 $('#sliceT').addEventListener('change',e=>{U.view.slice=e.target.checked;renderSide();renderPlan()});
 $('#sliceR').addEventListener('input',e=>{U.view.pos=num(e.target.value,0);renderSide();renderPlan()});
+const setZ=k=>{U.view.z=clamp(Math.round(k*100),20,400);renderSide()};
+$('#svz').addEventListener('input',e=>{U.view.z=clamp(num(e.target.value,100),20,400);renderSide()});
+$('#svzi').addEventListener('click',()=>setZ((SV?SV.k:1)*1.25));$('#svzo').addEventListener('click',()=>setZ((SV?SV.k:1)/1.25));
+$('#svzf').addEventListener('click',()=>{U.view.z=0;renderSide()});
+$('#svwrap').addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();setZ((SV?SV.k:1)*(e.deltaY<0?1.15:1/1.15))},{passive:false});
+window.addEventListener('resize',()=>{if(U.tab=='side'&&!U.view.z)renderSide()});
 const sv=$('#sv');
 function svPt(e){const p=sv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=sv.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
 sv.addEventListener('pointerdown',e=>{
@@ -552,6 +570,21 @@ sv.addEventListener('pointermove',e=>{
 function endSd(){const d=U.sd;if(!d)return;U.sd=null;if(!d.moved){U.hist.u.pop();renderAll();return}save();renderAll()}
 sv.addEventListener('pointerup',endSd);sv.addEventListener('pointercancel',endSd);
 
+/* ---------- alerts ---------- */
+function showModal(o){const M=$('#modal');M.innerHTML=`<div class="mbox" role="alertdialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt">${esc(o.title)}</h2><p>${esc(o.msg)}</p><div class="bar">${o.buttons.map((x,i)=>`<button class="b ${x.cls||''}" type="button" data-mi="${i}">${esc(x.label)}</button>`).join('')}</div></div>`;M._b=o.buttons;M.hidden=false;M.querySelector('button:last-child').focus()}
+function closeModal(){const M=$('#modal');M.hidden=true;M.innerHTML='';M._b=null}
+$('#modal').addEventListener('click',e=>{const i=e.target.dataset.mi,M=$('#modal');if(i===undefined)return;const fn=M._b&&M._b[i].fn;closeModal();if(fn)fn()});
+function orphanFloors(b){const g=b.floors.find(f=>f.level==0);const reach=new Set([g.id]);for(let ch=true;ch;){ch=false;b.stairs.forEach(s=>{if(s.to&&s.from!=s.to){if(reach.has(s.from)&&!reach.has(s.to)){reach.add(s.to);ch=true}else if(reach.has(s.to)&&!reach.has(s.from)){reach.add(s.from);ch=true}}})}return asc(b).filter(f=>!reach.has(f.id))}
+function deleteStair(id){const b=B(),c=JSON.parse(JSON.stringify(b));c.stairs=c.stairs.filter(s=>s.id!=id);
+ const before=new Set(orphanFloors(b).map(f=>f.id)),nw=orphanFloors(c).filter(f=>!before.has(f.id));
+ const go=()=>edit(b=>{b.stairs=b.stairs.filter(s=>s.id!=id);if(U.sel&&U.sel.id==id)U.sel=null});
+ if(nw.length&&!b.req.float)showModal({title:'Floors would be abandoned',msg:`This stairway is the only link to ${nw.map(f=>f.name).join(', ')}. Deleting it leaves ${nw.length==1?'that floor':'those floors'} cut off from the ground floor.`,buttons:[{label:'Delete it anyway',cls:'danger',fn:go},{label:'Keep the stairway'}]});
+ else go()}
+function renderAlert(){const b=B(),A=$('#alertBar'),o=b.req.float?[]:orphanFloors(b);
+ A.hidden=!o.length;if(!o.length){A.innerHTML='';return}
+ A.innerHTML=`<b>Abandoned floor${o.length==1?'':'s'}: ${esc(o.map(f=>f.name).join(', '))}.</b> ${o.length==1?'It has':'They have'} no stairway linking ${o.length==1?'it':'them'} to the ground floor.<div class="bar" style="margin:8px 0 0">${o.map(f=>`<button class="b" type="button" data-fix="${f.id}">Add stairs to ${esc(f.name)}</button>`).join('')}</div>`}
+$('#alertBar').addEventListener('click',e=>{const id=e.target.dataset.fix;if(!id)return;U.prompt={kind:'stairs',fid:id};renderPrompt();$('#prompt').hidden?0:$('#prompt').scrollIntoView({block:'center'})});
+
 /* ---------- floors and stairs ---------- */
 const ovl=(p,q)=>p.x<q.x+q.w&&q.x<p.x+p.w&&p.y<q.y+q.h&&q.y<p.y+p.h;
 function neighborToward(b,f){const t=f.level>0?f.level-1:f.level<0?f.level+1:null;return t===null?null:b.floors.find(q=>q.level==t)||null}
@@ -562,9 +595,9 @@ function stuffIn(b,ids){const q=new Set(ids);return{rooms:b.rooms.filter(r=>q.ha
 function removeFloorsNow(ids){edit(b=>{const q=new Set(ids);b.floors=b.floors.filter(f=>!q.has(f.id));b.rooms=b.rooms.filter(r=>!q.has(r.floor));b.decor=b.decor.filter(d=>!q.has(d.floor));b.stairs=b.stairs.filter(x=>!q.has(x.from)&&!q.has(x.to));renorm(b);U.sel=null;U.prompt=null})}
 function requestRemoveFloor(id){
  const b=B(),f=fl(b,id);if(!f)return;
- if(f.level==0){U.prompt={kind:'note',msg:"The ground floor can't be removed. Every other floor is measured from it."};renderPrompt();return}
+ if(f.level==0){showModal({title:"The ground floor can't be removed",msg:'Every other floor is measured from the ground floor.',buttons:[{label:'OK'}]});return}
  const dep=dependents(b,f),names=dep.map(d=>d.name).join(', ');
- if(dep.length&&!b.req.float){U.prompt={kind:'block',fid:id,msg:`${f.name} can't be removed on its own. ${names} ${dep.length==1?'sits':'sit'} ${f.level>0?'above':'below'} it and would be left floating with no way to reach ${dep.length==1?'it':'them'}. Remove the ${f.level>0?'upper':'lower'} floor${dep.length==1?'':'s'} first, or remove ${f.name} together with ${dep.length==1?'it':'them'}.`};renderPrompt();return}
+ if(dep.length&&!b.req.float){showModal({title:'Floors would be abandoned',msg:`${f.name} can't be removed on its own. ${names} ${dep.length==1?'sits':'sit'} ${f.level>0?'above':'below'} it and would be left floating with no way to reach ${dep.length==1?'it':'them'}. Remove ${f.name} together with ${dep.length==1?'that floor':'those floors'}, or keep everything as it is.`,buttons:[{label:`Remove ${f.name} and the floors ${f.level>0?'above':'below'} it`,cls:'danger',fn:()=>removeWithDependents(id)},{label:'Keep everything'}]});return}
  const st=stuffIn(b,[id]);
  if(dep.length){if(!confirm(`Remove ${f.name}? ${names} will stay but lose their connection and drop down one level. Floating floors are allowed in your requirements, but whether the game accepts them is unverified. You can undo this.`))return}
  else if((st.rooms||st.decor||st.stairs)&&!confirm(`Remove ${f.name}? Its ${st.rooms} room${st.rooms==1?'':'s'}, ${st.decor} decor item${st.decor==1?'':'s'} and ${st.stairs} stairway${st.stairs==1?'':'s'} go with it. You can undo this.`))return;
@@ -643,7 +676,7 @@ $('#floorList').addEventListener('click',e=>{
  const a=e.target.dataset.act,row=e.target.closest('.frow');if(!a||!row)return;floorAct(a,row.dataset.id)});
 $('#stairList').addEventListener('click',e=>{const a=e.target.dataset.sa,id=e.target.dataset.id;if(!a)return;
  if(a=='go'){const s=B().stairs.find(q=>q.id==id);if(s){U.floor=s.from;U.sel={k:'stair',id};showTab('plan');renderAll()}}
- if(a=='del')edit(b=>{b.stairs=b.stairs.filter(s=>s.id!=id);U.sel=null})});
+ if(a=='del')deleteStair(id)});
 
 /* ---------- checks, dimensions ---------- */
 function runChecks(b){
@@ -738,16 +771,17 @@ document.addEventListener('keydown',e=>{
  const tag=(e.target.tagName||'').toLowerCase(),typing=tag=='input'||tag=='select'||tag=='textarea';
  if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='z'){e.preventDefault();e.shiftKey?redo():undo();return}
  if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='y'){e.preventDefault();redo();return}
+ if(e.key=='Escape'&&!$('#modal').hidden){closeModal();return}
  if(e.key=='Escape'){U.armed='';U.tool='select';U.sel=null;U.draft=null;U.drag=null;renderAll();return}
  if(typing||(U.tab!='plan'&&U.tab!='side'))return;
  const k=e.key.toLowerCase();
  if(U.tab=='plan'){if(k=='v')setTool('select');else if(k=='r')setTool('room');else if(k=='s')setTool('stair')}
  const o=getObj(U.sel);if(!o||U.sel.k=='floor')return;
- if(k=='delete'||k=='backspace'){e.preventDefault();const kk=U.sel.k;edit(b=>{const L=kk=='room'?b.rooms:kk=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});return}
+ if(k=='delete'||k=='backspace'){e.preventDefault();const kk=U.sel.k;if(kk=='stair'){deleteStair(U.sel.id);return}edit(b=>{const L=kk=='room'?b.rooms:kk=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});return}
  const dx={arrowleft:-1,arrowright:1}[k]||0,dy={arrowup:-1,arrowdown:1}[k]||0;
  if(dx||dy){e.preventDefault();const b=B();edit(()=>{o.x=clamp(o.x+dx,0,Math.max(0,b.w-(o.w||1)));o.y=clamp(o.y+dy,0,Math.max(0,b.h-(o.h||1)))})}});
 
-function renderAll(){renderBar();renderPlanControls();renderPlan();renderProps();renderDecor();renderSide();renderFloors();renderDims();renderOrder();renderPrompt()}
+function renderAll(){renderBar();renderPlanControls();renderPlan();renderProps();renderDecor();renderSide();renderFloors();renderDims();renderOrder();renderPrompt();renderAlert()}
 load();fixFloor();fit();renderAll();
 </script>
 </body></html>
