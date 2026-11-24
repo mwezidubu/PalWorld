@@ -68,6 +68,10 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 .steps li.done b{text-decoration:line-through;opacity:.6}
 .pbar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:8px 0 4px}.pbar div{height:100%;width:0;background:var(--cook);transition:width .25s}
 .note{border-left:4px solid var(--gold);padding:8px 12px;margin-top:12px;font-size:.9rem;color:var(--mu);font-weight:500}
+#prompt{border-color:var(--gold);border-width:3px}#prompt b{font-weight:800}
+#svwrap{overflow:auto;max-height:82vh;border:2px solid var(--ln);border-radius:8px;background:var(--bg)}
+#sv [data-room],#sv [data-h]{touch-action:none}
+.frow select{max-width:210px}
 </style></head>
 <body><div class="wrap">
 <p class="back"><a href="../../index.html">&larr; All MegaBase designs</a></p>
@@ -94,6 +98,7 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <label class="f">Base name<input id="nName" maxlength="60" value="New base"></label>
 <label class="f">Grid width (5 to 100)<input type="number" id="nW" min="5" max="100" value="20"></label>
 <label class="f">Grid height (5 to 100)<input type="number" id="nH" min="5" max="100" value="20"></label>
+<label class="f">Default wall material<select id="nMat"></select></label>
 <button class="b" id="nGo" type="button" aria-pressed="true">Create blank base</button>
 <button class="b" id="nCancel" type="button">Cancel</button>
 </div>
@@ -110,6 +115,7 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 </nav>
 
 <main>
+<div class="card" id="prompt" role="status" hidden></div>
 <section class="view on" id="v-plan">
 <div class="card">
 <div class="bar" id="tools">
@@ -153,21 +159,29 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <h2>Side view</h2>
 <div class="bar">
 <label class="f">View<select id="axisSel"><option value="front">Front (looking north, left to right is west to east)</option><option value="side">Side (looking east, left to right is north to south)</option></select></label>
+<label class="f">Floors shown<select id="showSel"><option value="all">All floors</option><option value="one">Selected floor only</option></select></label>
+<label class="chk"><input type="checkbox" id="eqT"> Equal scale</label>
+<label class="f" id="vzWrap">Panel height<input type="range" id="vz" min="6" max="48" value="20"></label>
+<button class="b" id="vfit" type="button">Fit all floors</button>
+</div>
+<div class="bar">
 <label class="chk"><input type="checkbox" id="sliceT"> Show only one slice</label>
 <label class="f" id="sliceWrap">Slice position<input type="range" id="sliceR" min="0" max="19" value="0"></label>
 <span class="hint" id="sliceTxt"></span>
 </div>
-<div class="hint" style="margin-bottom:8px">One column is one tile and one row is one panel. Click a floor band to make it the floor you edit on the plan, or click a room to select it.</div>
-<svg id="sv" role="img" aria-label="Side view of all floors"></svg>
+<div class="hint" style="margin-bottom:8px">Columns are tiles and rows are panels. Panels are drawn taller than tiles so every floor stays readable. Click a room or floor to select it. Drag a room sideways to move it, or onto another floor to change its floor. Drag the square handles on a selected room to change its length or height. Drag the bar on a floor's edge to change that floor's panel height. Delete removes the selected room.</div>
+<div id="svwrap"><svg id="sv" role="img" aria-label="Side view of all floors"></svg></div>
 </div>
+<div class="card" id="sprops" aria-live="polite"></div>
 </section>
 
 <section class="view" id="v-floors">
 <div class="card">
 <h2>Floors</h2>
+<div class="bar"><label class="f">Default wall material for this base<select id="baseMat"></select></label></div>
 <div class="bar"><button class="b" id="fAddUp" type="button">+ Floor above</button><button class="b" id="fAddDown" type="button">+ Basement below</button></div>
 <div id="floorList"></div>
-<div class="note">The ground floor can't be removed. Floor height is in glass panels and also sets the default height of every room on that floor.</div>
+<div class="note">The ground floor can't be removed. A floor in the middle of the stack can't be removed on its own, because the floors above it would be left with no way up (you can remove it together with them). Floor height is in panels and sets the default height of every room on that floor. Floors and rooms can override the base material.</div>
 </div>
 <div class="card">
 <h2>Stairways</h2>
@@ -185,6 +199,7 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <ul class="chk-list" id="checks"></ul>
 </div>
 <div class="card tw"><h2>Floors</h2><div id="tFloors"></div></div>
+<div class="card tw"><h2>Materials</h2><div class="hint" style="margin-bottom:6px">Rough counts per building set. Each room is counted on its own, so a wall shared by two rooms counts twice. Treat the wall number as a generous upper estimate.</div><div id="tMats"></div></div>
 <div class="card tw"><h2>Rooms</h2><div id="tRooms"></div></div>
 <div class="card tw"><h2>Stairways</h2><div id="tStairs"></div></div>
 <div class="card tw"><h2>Decor</h2><div id="tDecor"></div></div>
@@ -193,7 +208,7 @@ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical
 <section class="view" id="v-order">
 <div class="card">
 <h2>Build order</h2>
-<div class="hint">This list is made from your plan, so it changes as you draw. It assumes all building technology is unlocked and every floor, wall and ceiling is glass.</div>
+<div class="hint">This list is made from your plan, so it changes as you draw. It assumes all building technology is unlocked. Materials follow what you picked for each floor and room.</div>
 <div class="pbar"><div id="pb"></div></div><div class="hint" id="pt"></div>
 <ol class="steps" id="steps"></ol>
 </div>
@@ -217,15 +232,16 @@ const TYPES={mine:['Mining & Crafting','--mine'],breed:['Breeding','--breed'],co
 const DEC=[['Foliage',[['tree','🌳','Tree'],['palm','🌴','Palm'],['fern','🌿','Fern'],['flowers','🌸','Flowers'],['tulip','🌷','Tulips'],['sunflower','🌻','Sunflower'],['pot','🪴','Potted plant'],['mush','🍄','Mushroom'],['cactus','🌵','Cactus'],['bamboo','🎋','Bamboo'],['clover','🍀','Clover']]],
 ['Decor',[['lantern','🏮','Lantern'],['lamp','💡','Lamp'],['candle','🕯️','Candle'],['seat','🪑','Seat'],['bed','🛏️','Bed'],['rock','🪨','Rock'],['statue','🗿','Statue'],['fountain','⛲','Fountain'],['banner','🚩','Banner']]],
 ['Base markers',[['palbox','📦','Palbox (one per base)']]]];
+const MATS={wood:['Wooden','Lv 2','Wood','#8d5a2b'],stone:['Stone','Lv 19','Stone','#7d8790'],metal:['Metal','Lv 30','Stone and Ingot','#4d6a86'],glass:['Glass','Lv 45','Stone and Paldium Fragment','#2aa6d6'],japanese:['Japanese-Style','Lv 49','Hardwood','#b5473a'],future:['Futuristic','Lv 62','Polymer','#8a63d2'],ancient:['Ancient','Lv 67','Soralite Ingot','#c79a2c']};
 const DI={};DEC.forEach(g=>g[1].forEach(d=>DI[d[0]]=d));
 
 /* ---------- data ---------- */
-function mkBase(name,w,h){return{id:uid(),name,w:clamp(w,5,100),h:clamp(h,5,100),floors:[{id:uid(),name:'Ground floor',level:0,height:6,roof:false}],rooms:[],stairs:[],decor:[],req:{minH:5,minSide:4,minStairW:3,minVoid:3,radius:0},done:{}}}
+function mkBase(name,w,h,mat){return{id:uid(),name,w:clamp(w,5,100),h:clamp(h,5,100),mat:MATS[mat]?mat:'glass',floors:[{id:uid(),name:'Ground floor',level:0,height:6,roof:false,mat:''}],rooms:[],stairs:[],decor:[],req:{minH:5,minSide:4,minStairW:3,minVoid:3,radius:0,float:false},done:{}}}
 function sane(o){
  if(!o||typeof o!=='object')return null;
- const b=mkBase(String(o.name||'Imported base').slice(0,60),num(o.w,20),num(o.h,20));
+ const b=mkBase(String(o.name||'Imported base').slice(0,60),num(o.w,20),num(o.h,20),o.mat);
  if(typeof o.id==='string'&&/^[\w-]{1,24}$/.test(o.id))b.id=o.id;
- let fs=Array.isArray(o.floors)?o.floors.slice(0,40).filter(f=>f&&typeof f==='object').map(f=>({id:gid(f.id),name:String(f.name||'Floor').slice(0,40),level:num(f.level,0),height:clamp(num(f.height,6),2,60),roof:!!f.roof})):[];
+ let fs=Array.isArray(o.floors)?o.floors.slice(0,40).filter(f=>f&&typeof f==='object').map(f=>({id:gid(f.id),name:String(f.name||'Floor').slice(0,40),level:num(f.level,0),height:clamp(num(f.height,6),2,100),roof:!!f.roof,mat:MATS[f.mat]?f.mat:''})):[];
  const seen=new Set();fs=fs.filter(f=>!seen.has(f.id)&&seen.add(f.id));
  const neg=fs.filter(f=>f.level<0).sort((a,c)=>a.level-c.level),pos=fs.filter(f=>f.level>=0).sort((a,c)=>a.level-c.level);
  if(!pos.length)pos.push(b.floors[0]);
@@ -233,10 +249,10 @@ function sane(o){
  b.floors=[...neg,...pos];
  const ids=new Set(b.floors.map(f=>f.id));
  const P=v=>clamp(num(v,0),-500,500),S=(v,d)=>clamp(num(v,d),1,100);
- b.rooms=(Array.isArray(o.rooms)?o.rooms:[]).slice(0,3000).filter(r=>r&&ids.has(r.floor)).map(r=>({id:gid(r.id),name:String(r.name||'Room').slice(0,40),type:TYPES[r.type]?r.type:'other',floor:r.floor,x:P(r.x),y:P(r.y),w:S(r.w,1),h:S(r.h,1),round:!!r.round,open:!!r.open,hp:clamp(num(r.hp,0),0,60)}));
+ b.rooms=(Array.isArray(o.rooms)?o.rooms:[]).slice(0,3000).filter(r=>r&&ids.has(r.floor)).map(r=>({id:gid(r.id),name:String(r.name||'Room').slice(0,40),type:TYPES[r.type]?r.type:'other',floor:r.floor,x:P(r.x),y:P(r.y),w:S(r.w,1),h:S(r.h,1),round:!!r.round,open:!!r.open,hp:clamp(num(r.hp,0),0,100),mat:MATS[r.mat]?r.mat:''}));
  b.stairs=(Array.isArray(o.stairs)?o.stairs:[]).slice(0,500).filter(s=>s&&ids.has(s.from)).map(s=>({id:gid(s.id),name:String(s.name||'Stair').slice(0,40),from:s.from,to:ids.has(s.to)?s.to:null,x:P(s.x),y:P(s.y),w:S(s.w,3),h:S(s.h,5),dir:'NESW'.includes(s.dir)&&s.dir?s.dir:'N',void:clamp(num(s.void,0),0,12)}));
  b.decor=(Array.isArray(o.decor)?o.decor:[]).slice(0,20000).filter(d=>d&&DI[d.item]&&ids.has(d.floor)).map(d=>({id:gid(d.id),item:d.item,floor:d.floor,x:P(d.x),y:P(d.y)}));
- const q=o.req||{};b.req={minH:clamp(num(q.minH,5),1,60),minSide:clamp(num(q.minSide,4),1,20),minStairW:clamp(num(q.minStairW,3),1,20),minVoid:clamp(num(q.minVoid,3),1,20),radius:clamp(num(q.radius,0),0,300)};
+ const q=o.req||{};b.req={minH:clamp(num(q.minH,5),2,60),minSide:clamp(num(q.minSide,4),1,20),minStairW:clamp(num(q.minStairW,3),1,20),minVoid:clamp(num(q.minVoid,3),1,20),radius:clamp(num(q.radius,0),0,300),float:!!q.float};
  b.done={};if(o.done&&typeof o.done==='object')for(const k in o.done)if(o.done[k]===true&&k.length<60)b.done[k]=true;
  return b}
 let S={bases:{},cur:null};
@@ -246,8 +262,9 @@ function load(){
  if(!S.cur||!S.bases[S.cur])S.cur=Object.keys(S.bases)[0]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const B=()=>S.bases[S.cur];
-const U={tab:'plan',tool:'select',floor:null,sel:null,armed:'',zoom:24,fit:true,grid:true,ghost:true,newType:'other',view:{axis:'front',slice:false,pos:0},drag:null,draft:null,hist:{u:[],r:[]}};
+const U={tab:'plan',tool:'select',floor:null,sel:null,armed:'',zoom:24,fit:true,grid:true,ghost:true,newType:'other',view:{axis:'front',slice:false,pos:0,show:'all',eq:false,vz:0},drag:null,sd:null,prompt:null,draft:null,hist:{u:[],r:[]}};
 const fl=(b,id)=>b.floors.find(f=>f.id===id);
+const matKey=(b,r)=>r.mat||(fl(b,r.floor)||{}).mat||b.mat||'glass';
 const asc=b=>b.floors.slice().sort((a,c)=>a.level-c.level);
 const fname=(b,id)=>{const f=fl(b,id);return f?f.name:'(none)'};
 const lvl=f=>f.level==0?'ground':f.level>0?f.level+' above':(-f.level)+' below';
@@ -256,14 +273,14 @@ function fit(){const b=B();U.zoom=clamp(Math.floor(620/Math.max(b.w,b.h)),4,40)}
 
 /* ---------- history and editing ---------- */
 function snap(){U.hist.u.push(JSON.stringify(B()));if(U.hist.u.length>60)U.hist.u.shift();U.hist.r=[]}
-function restore(js){const b=sane(JSON.parse(js));b.id=S.cur;S.bases[S.cur]=b;U.sel=null;U.drag=null;U.draft=null;fixFloor();save();renderAll()}
+function restore(js){const b=sane(JSON.parse(js));b.id=S.cur;S.bases[S.cur]=b;U.sel=null;U.drag=null;U.sd=null;U.prompt=null;U.draft=null;fixFloor();save();renderAll()}
 function undo(){if(!U.hist.u.length)return;U.hist.r.push(JSON.stringify(B()));restore(U.hist.u.pop())}
 function redo(){if(!U.hist.r.length)return;U.hist.u.push(JSON.stringify(B()));restore(U.hist.r.pop())}
 function edit(fn){snap();fn(B());fixFloor();save();renderAll()}
 
 /* ---------- geometry ---------- */
 const inRect=(o,t)=>t.x>=o.x&&t.x<o.x+o.w&&t.y>=o.y&&t.y<o.y+o.h;
-const getObj=sel=>{if(!sel)return null;const b=B();const L=sel.k=='room'?b.rooms:sel.k=='stair'?b.stairs:b.decor;return L.find(o=>o.id==sel.id)||null};
+const getObj=sel=>{if(!sel)return null;const b=B();if(sel.k=='floor')return fl(b,sel.id)||null;const L=sel.k=='room'?b.rooms:sel.k=='stair'?b.stairs:b.decor;return L.find(o=>o.id==sel.id)||null};
 function hit(t){const b=B(),f=U.floor;
  const d=b.decor.find(d=>d.floor==f&&d.x==t.x&&d.y==t.y);if(d)return{k:'decor',id:d.id};
  for(let i=b.stairs.length-1;i>=0;i--){const s=b.stairs[i];if((s.from==f||s.to==f)&&inRect(s,t))return{k:'stair',id:s.id}}
@@ -290,7 +307,8 @@ function renderPlan(){
  if(U.ghost)[[fs[ix-1],'6 4'],[fs[ix+1],'2 3']].forEach(([f,da])=>{if(f)b.rooms.filter(r=>r.floor==f.id).forEach(r=>h+=`<rect x="${X(r.x)}" y="${Y(r.y)}" width="${r.w*z}" height="${r.h*z}" fill="none" stroke="var(--mu)" stroke-dasharray="${da}" stroke-width="1.5" opacity=".75" pointer-events="none"/>`)});
  b.rooms.filter(r=>r.floor==U.floor).forEach(r=>{const c=`var(${TYPES[r.type][1]})`,sel=U.sel&&U.sel.k=='room'&&U.sel.id==r.id,arch=r.type=='arch';
   h+=`<rect x="${X(r.x)+1}" y="${Y(r.y)+1}" width="${r.w*z-2}" height="${r.h*z-2}" rx="${r.round?Math.min(r.w,r.h)*z*.28:3}" fill="${c}" fill-opacity="${arch?.16:.34}" stroke="${c}" stroke-width="${sel?4:2.5}"${arch?' stroke-dasharray="5 3"':''}/>`;
-  if(r.w*z>=44&&r.h*z>=28){const cx=X(r.x+r.w/2),cy=Y(r.y+r.h/2),f=fl(b,r.floor);h+=`<text x="${cx}" y="${cy-2}">${esc(trunc(r.name,r.w*z/6.8))}</text>`;if(r.h*z>=44)h+=`<text x="${cx}" y="${cy+12}" class="sm">${r.w} × ${r.h} · ${r.hp||f.height} panels</text>`}});
+  if(!arch&&r.w*z>12&&r.h*z>12)h+=`<rect x="${X(r.x)+4}" y="${Y(r.y)+4}" width="${r.w*z-8}" height="${r.h*z-8}" rx="${r.round?Math.min(r.w,r.h)*z*.24:2}" fill="none" stroke="${MATS[matKey(b,r)][3]}" stroke-width="2" pointer-events="none"/>`;
+  if(r.w*z>=44&&r.h*z>=28){const cx=X(r.x+r.w/2),cy=Y(r.y+r.h/2),f=fl(b,r.floor);h+=`<text x="${cx}" y="${cy-2}">${esc(trunc(r.name,r.w*z/6.8))}</text>`;if(r.h*z>=44)h+=`<text x="${cx}" y="${cy+12}" class="sm">${r.w} × ${r.h} · ${r.hp||f.height} panels${r.w*z>=150?' · '+MATS[matKey(b,r)][0]:''}</text>`}});
  b.stairs.forEach(s=>{const sf=stairFloors(b,s);if(s.from!=U.floor&&s.to!=U.floor)return;const upperHere=sf&&sf.hi.id==U.floor,sel=U.sel&&U.sel.k=='stair'&&U.sel.id==s.id;
   h+=`<rect x="${X(s.x)+1}" y="${Y(s.y)+1}" width="${s.w*z-2}" height="${s.h*z-2}" fill="var(--ink)" fill-opacity="${upperHere?.08:.24}" stroke="var(--ink)" stroke-width="${sel?4:2}"${upperHere?' stroke-dasharray="4 3"':''}/>`;
   if(z>=8){const vert=s.dir=='N'||s.dir=='S',n=vert?s.h:s.w;for(let i=1;i<n;i++)h+=vert?`<line x1="${X(s.x)}" x2="${X(s.x+s.w)}" y1="${Y(s.y+i)}" y2="${Y(s.y+i)}" stroke="var(--ink)" stroke-opacity=".45" pointer-events="none"/>`:`<line y1="${Y(s.y)}" y2="${Y(s.y+s.h)}" x1="${X(s.x+i)}" x2="${X(s.x+i)}" stroke="var(--ink)" stroke-opacity=".45" pointer-events="none"/>`}
@@ -328,7 +346,7 @@ cv.addEventListener('pointermove',e=>{
 function endDrag(){
  const d=U.drag;if(!d)return;U.drag=null;const b=B();
  if(d.m=='draw'&&U.draft){const r=U.draft;U.draft=null;snap();
-  if(U.tool=='room'){const o={id:uid(),name:nextName(b,U.newType),type:U.newType,floor:U.floor,x:r.x,y:r.y,w:r.w,h:r.h,round:false,open:false,hp:0};b.rooms.push(o);U.sel={k:'room',id:o.id}}
+  if(U.tool=='room'){const o={id:uid(),name:nextName(b,U.newType),type:U.newType,floor:U.floor,x:r.x,y:r.y,w:r.w,h:r.h,round:false,open:false,hp:0,mat:''};b.rooms.push(o);U.sel={k:'room',id:o.id}}
   else{const f=asc(b),i=f.findIndex(q=>q.id==U.floor),to=(f[i+1]||f[i-1]||{}).id||null;const o={id:uid(),name:'Stair '+(b.stairs.length+1),from:U.floor,to,x:r.x,y:r.y,w:r.w,h:r.h,dir:r.h>=r.w?'N':'E',void:to?b.req.minVoid:0};b.stairs.push(o);U.sel={k:'stair',id:o.id}}
   save();renderAll();return}
  if(!d.moved){U.hist.u.pop();renderAll();return}
@@ -336,9 +354,11 @@ function endDrag(){
 cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 
 /* ---------- selected-object panel ---------- */
-function renderProps(){
- const b=B(),o=getObj(U.sel),P=$('#props');
- if(!o){P.innerHTML=`<h2>Nothing selected</h2><p class="hint">Use <b>Select / move</b> and click a room, stairway or decor item. Use <b>Draw room</b> or <b>Draw stairs</b> and drag on the grid to add one.</p><p class="hint">Editing floor: <b>${esc(fname(b,U.floor))}</b>. ${b.rooms.filter(r=>r.floor==U.floor).length} room${b.rooms.filter(r=>r.floor==U.floor).length==1?'':'s'} here.</p>`;return}
+const matOpts=(cur,blank)=>(blank?`<option value=""${!cur?' selected':''}>${esc(blank)}</option>`:'')+Object.keys(MATS).map(k=>`<option value="${k}"${k==cur?' selected':''}>${MATS[k][0]} (${MATS[k][1]})</option>`).join('');
+const DIRN={N:'north',E:'east',S:'south',W:'west'};
+function propsHTML(){
+ const b=B(),o=getObj(U.sel);
+ if(!o){const n=b.rooms.filter(r=>r.floor==U.floor).length;return`<h2>Nothing selected</h2><p class="hint">Click a room, stairway, floor or decor item to edit it. On the plan, use <b>Draw room</b> or <b>Draw stairs</b> and drag on the grid to add one.</p><p class="hint">Editing floor: <b>${esc(fname(b,U.floor))}</b>. ${n} room${n==1?'':'s'} here.</p>`}
  const fo=cur=>asc(b).reverse().map(f=>`<option value="${f.id}"${f.id==cur?' selected':''}>${esc(f.name)}</option>`).join('');
  const nf=(f,l,v,mn,mx,ph)=>`<label class="f">${l}<input type="number" data-f="${f}" value="${v}" min="${mn}" max="${mx}"${ph?` placeholder="${ph}"`:''}></label>`;
  const k=U.sel.k;let h='';
@@ -348,10 +368,11 @@ function renderProps(){
   <label class="f">Type<select data-f="type">${Object.keys(TYPES).map(t=>`<option value="${t}"${t==o.type?' selected':''}>${TYPES[t][0]}</option>`).join('')}</select></label>
   <label class="f">Floor<select data-f="floor">${fo(o.floor)}</select></label>
   ${nf('x','Left (x)',o.x,0,99)}${nf('y','Top (y)',o.y,0,99)}${nf('w','Width',o.w,1,100)}${nf('h','Depth',o.h,1,100)}
-  <label class="f wide">Height override (panels)<input type="number" data-f="hp" value="${o.hp||''}" min="1" max="60" placeholder="Floor height: ${f.height}"></label></div>
+  <label class="f">Height override (panels)<input type="number" data-f="hp" value="${o.hp||''}" min="${b.req.minH}" max="100" placeholder="Floor height: ${f.height}"></label>
+  <label class="f">Wall material<select data-f="mat">${matOpts(o.mat,'Floor default: '+MATS[matKey(b,{floor:o.floor})][0])}</select></label></div>
   <label class="chk"><input type="checkbox" data-f="round"${o.round?' checked':''}> Rounded corners</label>
   <label class="chk" style="margin-top:6px"><input type="checkbox" data-f="open"${o.open?' checked':''}> No ceiling (open to the sky)</label>
-  <p class="hint">${o.w} × ${o.h} tiles · ${o.w*o.h} tiles of floor · ${o.hp||f.height} panels tall</p>`}
+  <p class="hint">${o.w} × ${o.h} tiles · ${o.w*o.h} tiles of floor · ${o.hp||f.height} panels tall · ${MATS[matKey(b,o)][0]}. Minimum height is ${b.req.minH} panels.</p>`}
  else if(k=='stair'){
   h=`<h2>${esc(o.name)}</h2><div class="hint">Stairway</div><div class="grid2">
   <label class="f wide">Name<input data-f="name" value="${esc(o.name)}" maxlength="40"></label>
@@ -361,13 +382,25 @@ function renderProps(){
   <label class="f">Faces<select data-f="dir">${['N','E','S','W'].map(d=>`<option value="${d}"${d==o.dir?' selected':''}>${{N:'North ↑',E:'East →',S:'South ↓',W:'West ←'}[d]}</option>`).join('')}</select></label>
   ${nf('void','Open ceiling (tiles, 0 = none)',o.void,0,12)}</div>
   <p class="hint">The stair is ${Math.min(o.w,o.h)} wide and ${Math.max(o.w,o.h)} long. The open ceiling sits beyond the top end of the stair so you can also jump up.</p>`}
+ else if(k=='floor'){const L=layout(b),n=b.rooms.filter(r=>r.floor==o.id).length,a=asc(b),i=a.findIndex(f=>f.id==o.id),nb=neighborToward(b,o);
+  h=`<h2>${esc(o.name)}</h2><div class="hint">Floor · ${lvl(o)} · panels ${L.pos[o.id][0]} to ${L.pos[o.id][1]} · ${n} room${n==1?'':'s'}</div><div class="grid2">
+  <label class="f wide">Name<input data-f="name" value="${esc(o.name)}" maxlength="40"></label>
+  ${nf('height','Height (panels)',o.height,b.req.minH,100)}
+  <label class="f">Wall material<select data-f="mat">${matOpts(o.mat,'Base default: '+MATS[b.mat||'glass'][0])}</select></label></div>
+  <label class="chk"><input type="checkbox" data-f="roof"${o.roof?' checked':''}> Open roof (no ceiling)</label>
+  <p class="hint">Minimum height is ${b.req.minH} panels. You can change that under Requirements on the Dimensions tab. Rooms on this floor use this height unless they have their own override.</p>
+  <div class="bar"><button class="b" type="button" data-act="hplus">Taller (+1)</button><button class="b" type="button" data-act="hminus">Shorter (−1)</button><button class="b" type="button" data-act="fplan">Edit on plan</button></div>
+  <div class="bar"><button class="b" type="button" data-act="fup"${i>=a.length-1?' disabled':''}>Move floor up</button><button class="b" type="button" data-act="fdown"${i<=0?' disabled':''}>Move floor down</button>${nb&&!hasStair(b,o,nb)?'<button class="b" type="button" data-act="fstairs">Add stairs</button>':''}${o.level!=0?'<button class="b danger" type="button" data-act="fdel">Remove floor</button>':''}</div>`}
  else{const it=DI[o.item];
   h=`<h2>${it[1]} ${esc(it[2])}</h2><div class="hint">Decor item</div><div class="grid2"><label class="f">Floor<select data-f="floor">${fo(o.floor)}</select></label><span></span>${nf('x','Column (x)',o.x,0,99)}${nf('y','Row (y)',o.y,0,99)}</div>`}
- h+=`<div class="bar">${k!='decor'?'<button class="b" type="button" data-act="dup">Duplicate</button>':''}<button class="b danger" type="button" data-act="del">${k=='decor'?'Remove':'Delete'}</button></div>`;
- P.innerHTML=h}
-$('#props').addEventListener('change',e=>{
+ if(k!='floor')h+=`<div class="bar">${k!='decor'?'<button class="b" type="button" data-act="dup">Duplicate</button>':''}<button class="b danger" type="button" data-act="del">${k=='decor'?'Remove':'Delete'}</button></div>`;
+ return h}
+function renderProps(){const h=propsHTML();$('#props').innerHTML=h;$('#sprops').innerHTML=h}
+function propsChange(e){
  const el=e.target,f=el.dataset.f;if(!f)return;const o=getObj(U.sel);if(!o)return;const k=U.sel.k;
- edit(b=>{const w=o.w||1,h=o.h||1;
+ edit(b=>{
+  if(k=='floor'){if(f=='name')o.name=(el.value.trim()||o.name).slice(0,40);else if(f=='height')o.height=clamp(num(el.value,o.height),b.req.minH,100);else if(f=='mat')o.mat=MATS[el.value]?el.value:'';else if(f=='roof')o.roof=el.checked;return}
+  const w=o.w||1,h=o.h||1;
   if(f=='name')o.name=(el.value.trim()||o.name).slice(0,40);
   else if(f=='type'&&TYPES[el.value])o.type=el.value;
   else if(f=='floor'&&fl(b,el.value))o.floor=el.value;
@@ -378,14 +411,16 @@ $('#props').addEventListener('change',e=>{
   else if(f=='y')o.y=clamp(num(el.value,o.y),0,Math.max(0,b.h-h));
   else if(f=='w'){o.w=clamp(num(el.value,o.w),1,b.w);o.x=clamp(o.x,0,b.w-o.w)}
   else if(f=='h'){o.h=clamp(num(el.value,o.h),1,b.h);o.y=clamp(o.y,0,b.h-o.h)}
-  else if(f=='hp')o.hp=el.value===''?0:clamp(num(el.value,0),0,60);
+  else if(f=='hp')o.hp=el.value===''?0:clamp(num(el.value,0),b.req.minH,100);
+  else if(f=='mat')o.mat=MATS[el.value]?el.value:'';
   else if(f=='void')o.void=clamp(num(el.value,0),0,12);
-  else if(f=='round'||f=='open')o[f]=el.checked;
-  if(k=='stair'&&!o.to)o.void=o.void})});
-$('#props').addEventListener('click',e=>{
+  else if(f=='round'||f=='open')o[f]=el.checked})}
+function propsClick(e){
  const a=e.target.dataset.act;if(!a)return;const o=getObj(U.sel);if(!o)return;const k=U.sel.k;
+ if(k=='floor'){floorAct(a,o.id);return}
  if(a=='del')edit(b=>{const L=k=='room'?b.rooms:k=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});
- if(a=='dup')edit(b=>{const c=JSON.parse(JSON.stringify(o));c.id=uid();c.name=(o.name+' copy').slice(0,40);c.x=clamp(o.x+1,0,b.w-o.w);c.y=clamp(o.y+1,0,b.h-o.h);(k=='room'?b.rooms:b.stairs).push(c);U.sel={k,id:c.id}})});
+ if(a=='dup')edit(b=>{const c=JSON.parse(JSON.stringify(o));c.id=uid();c.name=(o.name+' copy').slice(0,40);c.x=clamp(o.x+1,0,b.w-o.w);c.y=clamp(o.y+1,0,b.h-o.h);(k=='room'?b.rooms:b.stairs).push(c);U.sel={k,id:c.id}})}
+['#props','#sprops'].forEach(q=>{$(q).addEventListener('change',propsChange);$(q).addEventListener('click',propsClick)});
 
 /* ---------- decor ---------- */
 function renderDecor(){
@@ -414,13 +449,13 @@ function renderPlanControls(){
  $$('#tools [data-tool]').forEach(x=>x.setAttribute('aria-pressed',!U.armed&&x.dataset.tool==U.tool?'true':'false'));
  $('#newType').value=U.newType;
  $('#toolHint').textContent=U.armed?'Placing decor. Click a tile to place one item.':U.tool=='room'?`Drag across the grid to draw a room on ${fname(b,U.floor)}.`:U.tool=='stair'?`Drag across the grid to draw a stairway on ${fname(b,U.floor)}. It connects to the next floor up by default.`:'Click to select. Drag to move. Drag the square handle at a corner to resize. Arrow keys nudge, Delete removes.';
- $('#legend').innerHTML=Object.keys(TYPES).map(t=>`<span><i style="background:var(${TYPES[t][1]})"></i>${TYPES[t][0]}</span>`).join('')+'<span>Dashed outlines = floors above and below</span>'}
+ $('#legend').innerHTML=Object.keys(TYPES).map(t=>`<span><i style="background:var(${TYPES[t][1]})"></i>${TYPES[t][0]}</span>`).join('')+'<span>Dashed outlines = floors above and below</span><span>Inner outline = wall material:</span>'+[...new Set(b.rooms.map(r=>matKey(b,r)))].map(k=>`<span><i style="background:${MATS[k][3]}"></i>${MATS[k][0]}</span>`).join('')}
 function setTool(t){U.tool=t;U.armed='';renderPlanControls();renderDecor()}
 $$('#tools [data-tool]').forEach(x=>x.addEventListener('click',()=>setTool(x.dataset.tool)));
 $('#newType').innerHTML=Object.keys(TYPES).map(t=>`<option value="${t}">${TYPES[t][0]}</option>`).join('');
 $('#newType').addEventListener('change',e=>{U.newType=e.target.value});
 $('#floorSel').addEventListener('change',e=>{U.floor=e.target.value;U.sel=null;renderAll()});
-function addFloor(dir){edit(b=>{const lv=dir>0?Math.max(...b.floors.map(f=>f.level))+1:Math.min(...b.floors.map(f=>f.level))-1;if(b.floors.length>=30)return;const f={id:uid(),name:dir>0?'Floor '+lv:'Basement '+(-lv),level:lv,height:6,roof:false};b.floors.push(f);U.floor=f.id;U.sel=null})}
+function addFloor(dir){edit(b=>{const lv=dir>0?Math.max(...b.floors.map(f=>f.level))+1:Math.min(...b.floors.map(f=>f.level))-1;if(b.floors.length>=30)return;const f={id:uid(),name:dir>0?'Floor '+lv:'Basement '+(-lv),level:lv,height:Math.max(6,b.req.minH),roof:false,mat:''};b.floors.push(f);U.floor=f.id;U.sel=null;U.prompt={kind:'stairs',fid:f.id}})}
 $('#addUp').addEventListener('click',()=>addFloor(1));$('#addDown').addEventListener('click',()=>addFloor(-1));
 $('#fAddUp').addEventListener('click',()=>addFloor(1));$('#fAddDown').addEventListener('click',()=>addFloor(-1));
 function setGrid(){const w=clamp(num($('#gW').value,B().w),5,100),h=clamp(num($('#gH').value,B().h),5,100);edit(b=>{b.w=w;b.h=h});if(U.fit)fit();renderAll()}
@@ -431,66 +466,181 @@ $('#gridT').addEventListener('change',e=>{U.grid=e.target.checked;renderPlan();r
 $('#ghostT').addEventListener('change',e=>{U.ghost=e.target.checked;renderPlan()});
 
 /* ---------- side view ---------- */
+let SV=null;
 function renderSide(){
- const b=B(),L=layout(b),ax=U.view.axis,n=ax=='front'?b.w:b.h,Mg=34,Gl=124,Rg=44;
- const totalV=L.top-L.bot+2,s=Math.max(3,Math.min(28,(940-Gl-Rg)/n,540/totalV)),Wp=n*s+Gl+Rg,Hp=totalV*s+2*Mg;
- const X=t=>Gl+t*s,Yv=p=>Mg+(L.top+2-p)*s;
+ const b=B(),ax=U.view.axis,n=ax=='front'?b.w:b.h,L=layout(b),Gl=124,Rg=44,Mg=34;
+ const one=U.view.show=='one'?fl(b,U.floor):null,vf=one?[one]:asc(b);
+ let pmin=Math.min(...vf.map(f=>L.pos[f.id][0])),pmax=Math.max(...vf.map(f=>L.pos[f.id][1]));
+ if(!one){pmin=Math.min(pmin,0);pmax=Math.max(pmax,0)}
+ const top=pmax+(one?0:2),totalV=top-pmin,fz=U.sd&&U.sd.fz,avail=(940-Gl-Rg)/n;
+ let sx,sy;
+ if(fz){sx=fz.sx;sy=fz.sy}else if(U.view.eq){sx=sy=Math.max(3,Math.min(28,avail,540/totalV))}else{sx=Math.max(3,Math.min(28,avail));sy=U.view.vz||clamp(Math.floor(600/totalV),8,36)}
+ const Wp=n*sx+Gl+Rg,Hp=totalV*sy+2*Mg,X=t=>Gl+t*sx,Yv=p=>Mg+(top-p)*sy;
  const other=ax=='front'?b.h:b.w;U.view.pos=clamp(U.view.pos,0,other-1);
  $('#sliceR').max=other-1;$('#sliceR').value=U.view.pos;$('#sliceT').checked=U.view.slice;$('#sliceWrap').hidden=!U.view.slice;
  $('#sliceTxt').textContent=U.view.slice?(ax=='front'?`Showing row ${U.view.pos} (counting from the north edge)`:`Showing column ${U.view.pos} (counting from the west edge)`):'Showing every room';
- $('#axisSel').value=ax;
+ $('#axisSel').value=ax;$('#showSel').value=U.view.show;$('#eqT').checked=U.view.eq;$('#vzWrap').hidden=U.view.eq;$('#vz').value=Math.round(sy);
  const sv=$('#sv');sv.setAttribute('viewBox',`0 0 ${Wp} ${Hp}`);
+ SV={Gl,Mg,sx,sy,top,n,Wp,Hp,vf,L,ax};
  const inS=o=>!U.view.slice||(ax=='front'?(o.y<=U.view.pos&&U.view.pos<o.y+o.h):(o.x<=U.view.pos&&U.view.pos<o.x+o.w));
- const hgt=(L.top+2-L.bot)*s;
- let h=`<defs><pattern id="sg" x="${Gl}" y="${Yv(0)}" width="${s}" height="${s}" patternUnits="userSpaceOnUse"><path d="M${s} 0V${s}M0 ${s}H${s}" fill="none" stroke="var(--ln)" stroke-width=".8"/></pattern></defs>`;
- h+=`<rect x="${Gl}" y="${Yv(L.top+2)}" width="${n*s}" height="${hgt}" fill="var(--sf)"/>`;
- if(L.bot<0)h+=`<rect x="${Gl}" y="${Yv(0)}" width="${n*s}" height="${-L.bot*s}" fill="var(--earth)" fill-opacity=".2"/>`;
- if(U.grid)h+=`<rect x="${Gl}" y="${Yv(L.top+2)}" width="${n*s}" height="${hgt}" fill="url(#sg)"/>`;
- asc(b).slice().reverse().forEach((f,i)=>{const[,y1]=L.pos[f.id],act=f.id==U.floor;
-  h+=`<g class="band" data-fid="${f.id}" style="cursor:pointer"><rect x="1" y="${Yv(y1)}" width="${Gl+n*s-1}" height="${f.height*s}" fill="${f.level<0?'var(--earth)':'var(--ln)'}" fill-opacity="${i%2?.08:.2}" stroke="${act?'var(--gold)':'var(--mu)'}" stroke-width="${act?3:1}" stroke-opacity="${act?1:.5}"/><text class="al" x="8" y="${Yv(y1)+f.height*s/2-1}">${esc(trunc(f.name,17))}</text><text class="al sm" x="8" y="${Yv(y1)+f.height*s/2+12}">${f.height} panels · ${lvl(f)}</text></g>`});
- b.rooms.forEach(o=>{const f=fl(b,o.floor);if(!f||!inS(o))return;const y0=L.pos[f.id][0],hp=o.hp||f.height,a0=ax=='front'?o.x:o.y,ln=ax=='front'?o.w:o.h,c=`var(${TYPES[o.type][1]})`;
-  h+=`<g data-room="${o.id}" style="cursor:pointer"><rect x="${X(a0)}" y="${Yv(y0+hp)}" width="${ln*s}" height="${hp*s}" fill="${c}" fill-opacity=".38" stroke="${c}" stroke-width="2"${o.type=='arch'?' stroke-dasharray="4 3"':''}/>`;
-  if(ln*s>46&&hp*s>16)h+=`<text x="${X(a0+ln/2)}" y="${Yv(y0+hp/2)+4}">${esc(trunc(o.name,ln*s/6.8))}</text>`;
-  if(o.open||f.roof)h+=`<text x="${X(a0+ln/2)}" y="${Yv(y0+hp)-4}" class="sm">open to the sky</text>`;h+='</g>'});
- b.stairs.forEach(st=>{const sf=stairFloors(b,st);if(!sf||!(!U.view.slice||(ax=='front'?(st.y<=U.view.pos&&U.view.pos<st.y+st.h):(st.x<=U.view.pos&&U.view.pos<st.x+st.w))))return;
+ const hgt=totalV*sy;
+ let h=`<defs><pattern id="sg" x="${Gl}" y="${Yv(0)}" width="${sx}" height="${sy}" patternUnits="userSpaceOnUse"><path d="M${sx} 0V${sy}M0 ${sy}H${sx}" fill="none" stroke="var(--ln)" stroke-width=".8"/></pattern></defs>`;
+ h+=`<rect x="${Gl}" y="${Yv(top)}" width="${n*sx}" height="${hgt}" fill="var(--sf)"/>`;
+ if(pmin<0){const e0=Math.min(0,top);h+=`<rect x="${Gl}" y="${Yv(e0)}" width="${n*sx}" height="${(e0-pmin)*sy}" fill="var(--earth)" fill-opacity=".2"/>`}
+ if(U.grid)h+=`<rect x="${Gl}" y="${Yv(top)}" width="${n*sx}" height="${hgt}" fill="url(#sg)"/>`;
+ vf.slice().reverse().forEach((f,i)=>{const[,y1]=L.pos[f.id],act=f.id==U.floor,bh=f.height*sy,cy=Yv(y1)+bh/2;
+  h+=`<g class="band" data-fid="${f.id}" style="cursor:pointer"><rect x="1" y="${Yv(y1)}" width="${Gl+n*sx-1}" height="${bh}" fill="${f.level<0?'var(--earth)':'var(--ln)'}" fill-opacity="${i%2?.08:.2}" stroke="${act?'var(--gold)':'var(--mu)'}" stroke-width="${act?3:1}" stroke-opacity="${act?1:.5}"/>`+(bh>=34?`<text class="al" x="8" y="${cy-1}">${esc(trunc(f.name,17))}</text><text class="al sm" x="8" y="${cy+12}">${f.height} panels · ${lvl(f)}</text>`:`<text class="al sm" x="8" y="${cy+3}">${esc(trunc(f.name,11))} · ${f.height}</text>`)+'</g>'});
+ const geo={},labs=[],outs=[],boxes=[],coll=(x0,x1,y0,y1)=>boxes.some(q=>x0<q[1]&&q[0]<x1&&y0<q[3]&&q[2]<y1);
+ b.rooms.forEach(o=>{const f=fl(b,o.floor);if(!f||!vf.includes(f)||!inS(o))return;const y0=L.pos[f.id][0],hp=o.hp||f.height,a0=ax=='front'?o.x:o.y,ln=ax=='front'?o.w:o.h,c=`var(${TYPES[o.type][1]})`,sel=U.sel&&U.sel.k=='room'&&U.sel.id==o.id;
+  const rx=X(a0),rw=ln*sx,ry=Yv(y0+hp),rh=hp*sy;geo[o.id]={rx,rw,ry,rh};
+  h+=`<g data-room="${o.id}" style="cursor:grab"><rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="${c}" fill-opacity=".38" stroke="${c}" stroke-width="${sel?4:2}"${o.type=='arch'?' stroke-dasharray="4 3"':''}/>`+(o.type!='arch'&&rw>10&&rh>10?`<rect x="${rx+3}" y="${ry+3}" width="${rw-6}" height="${rh-6}" fill="none" stroke="${MATS[matKey(b,o)][3]}" stroke-width="2" pointer-events="none"/>`:'')+'</g>';
+  const t=trunc(o.name,40),tw=t.length*6.3,tw9=t.length*5.3;
+  if(rw>=tw+8&&rh>=15){labs.push({t,x:rx+rw/2,y:ry+rh/2+4,st:''});boxes.push([rx+rw/2-tw/2,rx+rw/2+tw/2,ry+rh/2-6,ry+rh/2+6])}
+  else if(rw>=tw9+6&&rh>=12){labs.push({t,x:rx+rw/2,y:ry+rh/2+3,st:'font-size:9px'});boxes.push([rx+rw/2-tw9/2,rx+rw/2+tw9/2,ry+rh/2-6,ry+rh/2+5])}
+  else{const t2=trunc(o.name,22);outs.push({t:t2,tw:t2.length*6.3,rx,rw,ry,rh})}
+  if((o.open||f.roof)&&rw>70)labs.push({t:'open to the sky',x:rx+rw/2,y:ry-4,st:'font-size:10px;fill:var(--mu)'})});
+ outs.forEach(o=>{const my=o.ry+o.rh/2+4;let done=false;
+  for(const side of ['r','l']){if(done)break;const x0=side=='r'?o.rx+o.rw+4:o.rx-4-o.tw,x1=x0+o.tw;if(x0<Gl+2||x1>Wp-2)continue;
+   for(const dy of [0,13,-13,26,-26]){const y=my+dy;if(!coll(x0,x1,y-10,y+3)){boxes.push([x0,x1,y-10,y+3]);labs.push({t:o.t,x:side=='r'?x0:x1,y,st:'text-anchor:'+(side=='r'?'start':'end')});done=true;break}}}
+  if(!done)labs.push({t:o.t,x:clamp(o.rx+o.rw/2,o.tw/2+Gl,Wp-o.tw/2-2),y:o.ry-6,st:''})});
+ b.stairs.forEach(st=>{const sf=stairFloors(b,st);if(!sf||!vf.includes(sf.lo)||!vf.includes(sf.hi)||!(!U.view.slice||(ax=='front'?(st.y<=U.view.pos&&U.view.pos<st.y+st.h):(st.x<=U.view.pos&&U.view.pos<st.x+st.w))))return;
   const yl=L.pos[sf.lo.id][0],yh=L.pos[sf.hi.id][0],a0=ax=='front'?st.x:st.y,ln=ax=='front'?st.w:st.h;
   const along=ax=='front'?(st.dir=='E'||st.dir=='W'):(st.dir=='N'||st.dir=='S'),rise=ax=='front'?st.dir=='E':st.dir=='S';
-  if(along){const xa=rise?X(a0):X(a0+ln),xb=rise?X(a0+ln):X(a0);h+=`<line x1="${xa}" y1="${Yv(yl)}" x2="${xb}" y2="${Yv(yh)}" stroke="var(--ink)" stroke-width="3"/><text x="${(xa+xb)/2}" y="${(Yv(yl)+Yv(yh))/2-6}" class="sm">stair</text>`}
-  else h+=`<rect x="${X(a0)}" y="${Yv(yh)}" width="${ln*s}" height="${(yh-yl)*s}" fill="var(--ink)" fill-opacity=".12" stroke="var(--ink)" stroke-dasharray="3 3"/><text x="${X(a0+ln/2)}" y="${Yv(yh)+12}" class="sm">stair (end-on)</text>`;
-  const v=voidRect(st);if(v){const va=ax=='front'?v.x:v.y;h+=`<rect x="${X(va)}" y="${Yv(yh+.7)}" width="${v.w*s}" height="${.7*s}" fill="var(--bg)" stroke="var(--ink)" stroke-dasharray="3 2"/>`}});
- h+=`<line x1="${Gl}" x2="${Gl+n*s}" y1="${Yv(0)}" y2="${Yv(0)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="7 4"/><text class="sm ar" x="${Gl+n*s}" y="${Yv(0)-4}">ground level</text>`;
- for(let i=0;i<=n;i+=5)h+=`<text class="sm" x="${X(i)}" y="${Mg-10}">${i}</text>`;
- for(let p=Math.ceil(L.bot/5)*5;p<=L.top;p+=5)h+=`<text class="sm al" x="${Gl+n*s+6}" y="${Yv(p)+3}">${p}</text>`;
+  if(along){const xa=rise?X(a0):X(a0+ln),xb=rise?X(a0+ln):X(a0);h+=`<line x1="${xa}" y1="${Yv(yl)}" x2="${xb}" y2="${Yv(yh)}" stroke="var(--ink)" stroke-width="3" pointer-events="none"/><text x="${(xa+xb)/2}" y="${(Yv(yl)+Yv(yh))/2-6}" class="sm">stair</text>`}
+  else h+=`<rect x="${X(a0)}" y="${Yv(yh)}" width="${ln*sx}" height="${(yh-yl)*sy}" fill="var(--ink)" fill-opacity=".12" stroke="var(--ink)" stroke-dasharray="3 3" pointer-events="none"/><text x="${X(a0+ln/2)}" y="${Yv(yh)+12}" class="sm">stair (end-on)</text>`;
+  const v=voidRect(st);if(v){const va=ax=='front'?v.x:v.y;h+=`<rect x="${X(va)}" y="${Yv(yh+.7)}" width="${v.w*sx}" height="${.7*sy}" fill="var(--bg)" stroke="var(--ink)" stroke-dasharray="3 2" pointer-events="none"/>`}});
+ labs.forEach(l=>{h+=`<text x="${l.x}" y="${l.y}"${l.st?` style="${l.st}"`:''}>${esc(l.t)}</text>`});
+ if(pmin<=0&&top>=0)h+=`<line x1="${Gl}" x2="${Gl+n*sx}" y1="${Yv(0)}" y2="${Yv(0)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="7 4" pointer-events="none"/><text class="sm ar" x="${Gl+n*sx}" y="${Yv(0)-4}">ground level</text>`;
+ const tick=n>60?10:5;for(let i=0;i<=n;i+=tick)h+=`<text class="sm" x="${X(i)}" y="${Mg-10}">${i}</text>`;
+ const pst=sy<10?10:5;for(let p=Math.ceil(pmin/pst)*pst;p<=pmax;p+=pst)h+=`<text class="sm al" x="${Gl+n*sx+6}" y="${Yv(p)+3}">${p}</text>`;
+ const so=U.sel&&U.sel.k=='room'&&geo[U.sel.id];
+ if(so)h+=`<rect data-h="rlen" data-id="${U.sel.id}" x="${so.rx+so.rw-5}" y="${so.ry+so.rh/2-5}" width="10" height="10" fill="var(--ink)" stroke="var(--bg)" stroke-width="1.5" style="cursor:ew-resize"><title>Drag to change length</title></rect><rect data-h="rhgt" data-id="${U.sel.id}" x="${so.rx+so.rw/2-5}" y="${so.ry-5}" width="10" height="10" fill="var(--ink)" stroke="var(--bg)" stroke-width="1.5" style="cursor:ns-resize"><title>Drag to change height</title></rect>`;
+ vf.forEach(f=>{const ey=f.level>=0?Yv(L.pos[f.id][1]):Yv(L.pos[f.id][0]);h+=`<rect data-h="fgrip" data-id="${f.id}" x="${Gl+n*sx-36}" y="${ey-4}" width="32" height="8" rx="4" fill="var(--ink)" stroke="var(--bg)" stroke-width="1.5" style="cursor:ns-resize"><title>Drag to change this floor's height</title></rect>`});
  sv.innerHTML=h}
 $('#axisSel').addEventListener('change',e=>{U.view.axis=e.target.value;renderSide();renderPlan()});
+$('#showSel').addEventListener('change',e=>{U.view.show=e.target.value;renderSide()});
+$('#eqT').addEventListener('change',e=>{U.view.eq=e.target.checked;renderSide()});
+$('#vz').addEventListener('input',e=>{U.view.vz=num(e.target.value,20);U.view.eq=false;renderSide()});
+$('#vfit').addEventListener('click',()=>{U.view.vz=0;U.view.eq=false;U.view.show='all';renderSide()});
 $('#sliceT').addEventListener('change',e=>{U.view.slice=e.target.checked;renderSide();renderPlan()});
 $('#sliceR').addEventListener('input',e=>{U.view.pos=num(e.target.value,0);renderSide();renderPlan()});
-$('#sv').addEventListener('click',e=>{
- const r=e.target.closest('[data-room]');if(r){const o=B().rooms.find(q=>q.id==r.dataset.room);if(o){U.floor=o.floor;U.sel={k:'room',id:o.id};renderAll();return}}
- const f=e.target.closest('[data-fid]');if(f){U.floor=f.dataset.fid;U.sel=null;renderAll()}});
+const sv=$('#sv');
+function svPt(e){const p=sv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=sv.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
+sv.addEventListener('pointerdown',e=>{
+ if(e.button!==0||!SV)return;const b=B(),hd=e.target.closest('[data-h]'),rm=e.target.closest('[data-room]'),fb=e.target.closest('[data-fid]');
+ const r=sv.getBoundingClientRect(),base={x0:e.clientX,y0:e.clientY,ku:SV.Wp/(r.width||SV.Wp),moved:false,fz:{sx:SV.sx,sy:SV.sy}};
+ if(hd){const id=hd.dataset.id,m=hd.dataset.h,o=m=='fgrip'?fl(b,id):b.rooms.find(q=>q.id==id);if(!o)return;snap();
+  if(m=='fgrip'){U.sel={k:'floor',id};U.floor=id;U.sd={...base,m,id,h0:o.height}}
+  else{const f=fl(b,o.floor);U.sel={k:'room',id};U.floor=o.floor;U.sd={...base,m,id,h0:o.hp||f.height,l0:SV.ax=='front'?o.w:o.h,a0:SV.ax=='front'?o.x:o.y}}
+  sv.setPointerCapture(e.pointerId);e.preventDefault();renderSide();renderProps();return}
+ if(rm){const o=b.rooms.find(q=>q.id==rm.dataset.room);if(!o)return;U.sel={k:'room',id:o.id};U.floor=o.floor;snap();const pt=svPt(e),a0=SV.ax=='front'?o.x:o.y;
+  U.sd={...base,m:'rmove',id:o.id,ln:SV.ax=='front'?o.w:o.h,grab:(pt.x-SV.Gl)/SV.sx-a0};
+  sv.setPointerCapture(e.pointerId);e.preventDefault();renderSide();renderProps();return}
+ if(fb){U.floor=fb.dataset.fid;U.sel={k:'floor',id:fb.dataset.fid}}else U.sel=null;
+ renderAll()});
+sv.addEventListener('pointermove',e=>{
+ const d=U.sd;if(!d||!SV)return;const b=B(),g=SV,dx=(e.clientX-d.x0)*d.ku,dy=(e.clientY-d.y0)*d.ku;
+ if(d.m=='fgrip'){const f=fl(b,d.id);if(!f)return;const dp=Math.round(dy/d.fz.sy),nh=clamp(d.h0+(f.level>=0?-dp:dp),b.req.minH,100);if(nh!=f.height){f.height=nh;d.moved=true}}
+ else{const o=b.rooms.find(q=>q.id==d.id);if(!o)return;const f=fl(b,o.floor);
+  if(d.m=='rhgt'){const nh=clamp(d.h0-Math.round(dy/d.fz.sy),b.req.minH,100),nv=nh==f.height?0:nh;if(nv!=o.hp){o.hp=nv;d.moved=true}}
+  else if(d.m=='rlen'){const nl=clamp(d.l0+Math.round(dx/d.fz.sx),1,Math.max(1,g.n-d.a0));const key=g.ax=='front'?'w':'h';if(nl!=o[key]){o[key]=nl;d.moved=true}}
+  else if(d.m=='rmove'){const pt=svPt(e),key=g.ax=='front'?'x':'y',na=clamp(Math.round((pt.x-g.Gl)/g.sx-d.grab),0,Math.max(0,g.n-d.ln));
+   if(na!=o[key]){o[key]=na;d.moved=true}
+   const p=g.top-(pt.y-g.Mg)/g.sy,tf=g.vf.find(q=>p>=g.L.pos[q.id][0]&&p<g.L.pos[q.id][1]);
+   if(tf&&tf.id!=o.floor){o.floor=tf.id;U.floor=tf.id;d.moved=true}}}
+ renderSide();renderProps();renderPlan()});
+function endSd(){const d=U.sd;if(!d)return;U.sd=null;if(!d.moved){U.hist.u.pop();renderAll();return}save();renderAll()}
+sv.addEventListener('pointerup',endSd);sv.addEventListener('pointercancel',endSd);
 
 /* ---------- floors and stairs ---------- */
+const ovl=(p,q)=>p.x<q.x+q.w&&q.x<p.x+p.w&&p.y<q.y+q.h&&q.y<p.y+p.h;
+function neighborToward(b,f){const t=f.level>0?f.level-1:f.level<0?f.level+1:null;return t===null?null:b.floors.find(q=>q.level==t)||null}
+const hasStair=(b,f,nb)=>b.stairs.some(s=>(s.from==f.id&&s.to==nb.id)||(s.from==nb.id&&s.to==f.id));
+const dependents=(b,f)=>b.floors.filter(q=>f.level>0?q.level>f.level:f.level<0?q.level<f.level:false).sort((p,q)=>Math.abs(p.level)-Math.abs(q.level));
+function renorm(b){const neg=b.floors.filter(f=>f.level<0).sort((x,y)=>x.level-y.level),pos=b.floors.filter(f=>f.level>=0).sort((x,y)=>x.level-y.level);neg.forEach((f,i)=>f.level=i-neg.length);pos.forEach((f,i)=>f.level=i)}
+function stuffIn(b,ids){const q=new Set(ids);return{rooms:b.rooms.filter(r=>q.has(r.floor)).length,decor:b.decor.filter(d=>q.has(d.floor)).length,stairs:b.stairs.filter(x=>q.has(x.from)||q.has(x.to)).length}}
+function removeFloorsNow(ids){edit(b=>{const q=new Set(ids);b.floors=b.floors.filter(f=>!q.has(f.id));b.rooms=b.rooms.filter(r=>!q.has(r.floor));b.decor=b.decor.filter(d=>!q.has(d.floor));b.stairs=b.stairs.filter(x=>!q.has(x.from)&&!q.has(x.to));renorm(b);U.sel=null;U.prompt=null})}
+function requestRemoveFloor(id){
+ const b=B(),f=fl(b,id);if(!f)return;
+ if(f.level==0){U.prompt={kind:'note',msg:"The ground floor can't be removed. Every other floor is measured from it."};renderPrompt();return}
+ const dep=dependents(b,f),names=dep.map(d=>d.name).join(', ');
+ if(dep.length&&!b.req.float){U.prompt={kind:'block',fid:id,msg:`${f.name} can't be removed on its own. ${names} ${dep.length==1?'sits':'sit'} ${f.level>0?'above':'below'} it and would be left floating with no way to reach ${dep.length==1?'it':'them'}. Remove the ${f.level>0?'upper':'lower'} floor${dep.length==1?'':'s'} first, or remove ${f.name} together with ${dep.length==1?'it':'them'}.`};renderPrompt();return}
+ const st=stuffIn(b,[id]);
+ if(dep.length){if(!confirm(`Remove ${f.name}? ${names} will stay but lose their connection and drop down one level. Floating floors are allowed in your requirements, but whether the game accepts them is unverified. You can undo this.`))return}
+ else if((st.rooms||st.decor||st.stairs)&&!confirm(`Remove ${f.name}? Its ${st.rooms} room${st.rooms==1?'':'s'}, ${st.decor} decor item${st.decor==1?'':'s'} and ${st.stairs} stairway${st.stairs==1?'':'s'} go with it. You can undo this.`))return;
+ removeFloorsNow([id])}
+function removeWithDependents(id){
+ const b=B(),f=fl(b,id);if(!f)return;const ids=[id,...dependents(b,f).map(d=>d.id)],st=stuffIn(b,ids);
+ if(!confirm(`Remove ${ids.length} floors (${ids.map(i=>fname(b,i)).join(', ')})? Their ${st.rooms} room${st.rooms==1?'':'s'}, ${st.decor} decor item${st.decor==1?'':'s'} and ${st.stairs} stairway${st.stairs==1?'':'s'} go with them. You can undo this.`))return;
+ removeFloorsNow(ids)}
+function moveFloor(id,d){edit(b=>{const a=asc(b),i=a.findIndex(f=>f.id==id),j=i+d;if(j<0||j>=a.length)return;const t=a[i].level;a[i].level=a[j].level;a[j].level=t})}
+/* Finds a spot for stairs between a floor and its neighbour toward the ground, inside a room on the neighbour. */
+function planStairs(b,fid){
+ const f=fl(b,fid),nb=f&&neighborToward(b,f);
+ if(!nb)return{reason:'The ground floor does not need stairs.'};
+ const r=b.req,sw=Math.max(r.minStairW,3),vd=Math.max(r.minVoid,3),lo=f.level<nb.level?f:nb,hi=lo===f?nb:f;
+ const rooms=b.rooms.filter(q=>q.floor==nb.id&&q.type!='arch');
+ if(!rooms.length)return{reason:`${nb.name} has no rooms yet. Draw a room on it first, then add the stairs.`};
+ const busy=[];b.stairs.forEach(s=>{if(s.from==nb.id||s.to==nb.id){busy.push(s);const v=voidRect(s);if(v)busy.push(v)}});
+ const prev=b.stairs.find(s=>s.from==nb.id||s.to==nb.id);let best=null,bl=0;
+ for(const len of [5,4,3]){
+  for(const rm of rooms)for(const dir of ['N','E','S','W']){const vert=dir=='N'||dir=='S',w=vert?sw:len,h=vert?len:sw;
+   for(let x=rm.x;x+w<=rm.x+rm.w;x++)for(let y=rm.y;y+h<=rm.y+rm.h;y++){
+    const v=voidRect({x,y,w,h,dir,void:vd,to:true}),u={x:Math.min(x,v.x),y:Math.min(y,v.y)};u.w=Math.max(x+w,v.x+v.w)-u.x;u.h=Math.max(y+h,v.y+v.h)-u.y;
+    if(u.x<rm.x||u.y<rm.y||u.x+u.w>rm.x+rm.w||u.y+u.h>rm.y+rm.h||u.x<0||u.y<0||u.x+u.w>b.w||u.y+u.h>b.h)continue;
+    if(busy.some(q=>ovl(q,u)))continue;
+    const ref=prev?{x:prev.x+prev.w/2,y:prev.y+prev.h/2}:{x:rm.x+rm.w/2,y:rm.y+rm.h/2},d=Math.hypot(u.x+u.w/2-ref.x,u.y+u.h/2-ref.y)+(rm.type=='hub'?-.5:0);
+    if(!best||d<best.d){best={d,x,y,w,h,dir,u};bl=len}}}
+  if(best)break}
+ if(!best)return{reason:`A ${sw}-wide stairway (3 to 5 tiles long) plus its ${vd} × ${vd} open ceiling doesn't fit inside any room on ${nb.name}. Enlarge a room there to at least ${sw} × ${3+vd} tiles, or draw the stairs yourself with the Draw stairs tool.`};
+ const stair={id:uid(),name:'Stair '+(b.stairs.length+1),from:lo.id,to:hi.id,x:best.x,y:best.y,w:best.w,h:best.h,dir:best.dir,void:vd},u=best.u;
+ const cover=b.rooms.some(q=>q.floor==f.id&&q.type!='arch'&&q.x<=u.x&&q.y<=u.y&&q.x+q.w>=u.x+u.w&&q.y+q.h>=u.y+u.h);
+ const ctr={x:best.x+Math.floor(best.w/2),y:best.y+Math.floor(best.h/2)},inside=b.rooms.some(q=>q.floor==f.id&&q.type!='arch'&&inRect(q,ctr));
+ let hall=null;
+ if(!cover&&!inside){const m=Math.max(r.minSide,vd),hw=Math.min(b.w,Math.max(u.w,m)),hh=Math.min(b.h,Math.max(u.h,m));
+  hall={id:uid(),name:'Stair hall',type:'hub',floor:f.id,x:clamp(u.x-Math.floor((hw-u.w)/2),0,b.w-hw),y:clamp(u.y-Math.floor((hh-u.h)/2),0,b.h-hh),w:hw,h:hh,round:false,open:false,hp:0,mat:''}}
+ return{stair,hall,lo,hi,len:bl}}
+function applyStairs(fid){if(!planStairs(B(),fid).stair)return;edit(b=>{const p=planStairs(b,fid);if(!p.stair)return;if(p.hall)b.rooms.push(p.hall);b.stairs.push(p.stair);U.floor=fid;U.sel={k:'stair',id:p.stair.id};U.prompt=null})}
+function floorAct(a,id){
+ if(a=='hplus'||a=='hminus')edit(b=>{const f=fl(b,id);f.height=clamp(f.height+(a=='hplus'?1:-1),b.req.minH,100)});
+ else if(a=='fplan'){U.floor=id;U.sel={k:'floor',id};showTab('plan');renderAll()}
+ else if(a=='fup'||a=='fdown')moveFloor(id,a=='fup'?1:-1);
+ else if(a=='fstairs'){U.prompt={kind:'stairs',fid:id};renderPrompt();$('#prompt').scrollIntoView({block:'nearest'})}
+ else if(a=='fdel')requestRemoveFloor(id)}
+function renderPrompt(){
+ const P=$('#prompt'),b=B();let q=U.prompt,h='';
+ if(q&&q.fid){const f=fl(b,q.fid);if(!f)q=U.prompt=null;else if(q.kind=='stairs'){const nb=neighborToward(b,f);if(!nb||hasStair(b,f,nb))q=U.prompt=null}}
+ if(q){
+  if(q.kind=='stairs'){const f=fl(b,q.fid),pl=planStairs(b,f.id);
+   if(pl.stair){const s=pl.stair;h=`<b>Add stairs to ${esc(f.name)}?</b> A ${Math.min(s.w,s.h)} × ${Math.max(s.w,s.h)} stairway from ${esc(pl.lo.name)} up to ${esc(pl.hi.name)} fits at (${s.x}, ${s.y}), facing ${DIRN[s.dir]}, with a ${s.void} × ${s.void} open ceiling to jump up through${pl.hall?`. A Stair hall room (${pl.hall.w} × ${pl.hall.h}) will also be added on ${esc(f.name)} to hold it`:''}.<div class="bar" style="margin:8px 0 0"><button class="b" type="button" data-p="addstairs" aria-pressed="true">Add stairs</button><button class="b" type="button" data-p="dismiss">Not now</button></div>`}
+   else h=`<b>${esc(f.name)} has no way up or down yet.</b> ${esc(pl.reason)}<div class="bar" style="margin:8px 0 0"><button class="b" type="button" data-p="dismiss">OK</button></div>`}
+  else if(q.kind=='block'){const f=fl(b,q.fid);h=`<b>Removal blocked.</b> ${esc(q.msg)}<div class="bar" style="margin:8px 0 0"><button class="b danger" type="button" data-p="rmall">Remove ${esc(f.name)} and the floors ${f.level>0?'above':'below'} it</button><button class="b" type="button" data-p="dismiss">Keep them</button></div>`}
+  else h=`${esc(q.msg)}<div class="bar" style="margin:8px 0 0"><button class="b" type="button" data-p="dismiss">OK</button></div>`}
+ P.hidden=!h;P.innerHTML=h}
+$('#prompt').addEventListener('click',e=>{const a=e.target.dataset.p;if(!a)return;const q=U.prompt;
+ if(a=='dismiss'){U.prompt=null;renderPrompt()}
+ else if(a=='addstairs'&&q)applyStairs(q.fid);
+ else if(a=='rmall'&&q){const id=q.fid;U.prompt=null;renderPrompt();removeWithDependents(id)}});
 function renderFloors(){
- const b=B();
- $('#floorList').innerHTML=asc(b).reverse().map(f=>{const n=b.rooms.filter(r=>r.floor==f.id).length;return`<div class="frow" data-id="${f.id}">
+ const b=B();$('#baseMat').innerHTML=matOpts(b.mat);
+ $('#floorList').innerHTML=asc(b).reverse().map(f=>{const n=b.rooms.filter(r=>r.floor==f.id).length,nb=neighborToward(b,f);return`<div class="frow" data-id="${f.id}">
  <label class="f">Name<input data-ff="name" value="${esc(f.name)}" maxlength="40"></label>
  <span class="badge">${lvl(f)}</span>
- <label class="f">Height (panels)<input type="number" data-ff="height" value="${f.height}" min="2" max="60"></label>
+ <label class="f">Height (panels)<input type="number" data-ff="height" value="${f.height}" min="${b.req.minH}" max="100"></label>
+ <label class="f">Wall material<select data-ff="mat">${matOpts(f.mat,'Base default ('+MATS[b.mat||'glass'][0]+')')}</select></label>
  <label class="chk"><input type="checkbox" data-ff="roof"${f.roof?' checked':''}> Open roof</label>
  <span class="hint">${n} room${n==1?'':'s'}</span><span class="sp"></span>
- <button class="b" type="button" data-fa="edit">Edit on plan</button>
- ${f.level!=0?'<button class="b danger" type="button" data-fa="del">Remove</button>':''}</div>`}).join('');
+ <button class="b" type="button" data-act="fplan">Edit on plan</button>
+ ${nb&&!hasStair(b,f,nb)?'<button class="b" type="button" data-act="fstairs">Add stairs</button>':''}
+ <button class="b" type="button" data-act="fup">Move up</button><button class="b" type="button" data-act="fdown">Move down</button>
+ ${f.level!=0?'<button class="b danger" type="button" data-act="fdel">Remove</button>':''}</div>`}).join('');
  $('#stairList').innerHTML=b.stairs.length?`<table><thead><tr><th>Stairway</th><th>Connects</th><th>Size</th><th>Faces</th><th>Open ceiling</th><th></th></tr></thead><tbody>${b.stairs.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(fname(b,s.from))} → ${s.to?esc(fname(b,s.to)):'<i>not connected</i>'}</td><td>${s.w} × ${s.h}</td><td>${{N:'North',E:'East',S:'South',W:'West'}[s.dir]}</td><td>${s.void?s.void+' × '+s.void:'none'}</td><td><button class="b" data-sa="go" data-id="${s.id}" type="button">Edit on plan</button> <button class="b danger" data-sa="del" data-id="${s.id}" type="button">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p class="hint">No stairways yet.</p>'}
+$('#baseMat').addEventListener('change',e=>{const v=e.target.value;edit(b=>{b.mat=MATS[v]?v:'glass'})});
 $('#floorList').addEventListener('change',e=>{
  const f=e.target.dataset.ff,id=e.target.closest('.frow').dataset.id;if(!f)return;
- edit(b=>{const o=fl(b,id);if(f=='name')o.name=(e.target.value.trim()||o.name).slice(0,40);else if(f=='height')o.height=clamp(num(e.target.value,o.height),2,60);else if(f=='roof')o.roof=e.target.checked})});
+ edit(b=>{const o=fl(b,id);if(f=='name')o.name=(e.target.value.trim()||o.name).slice(0,40);else if(f=='height')o.height=clamp(num(e.target.value,o.height),b.req.minH,100);else if(f=='mat')o.mat=MATS[e.target.value]?e.target.value:'';else if(f=='roof')o.roof=e.target.checked})});
 $('#floorList').addEventListener('click',e=>{
- const a=e.target.dataset.fa,id=e.target.closest('.frow')&&e.target.closest('.frow').dataset.id;if(!a)return;
- if(a=='edit'){U.floor=id;U.sel=null;showTab('plan');renderAll()}
- if(a=='del'){const b=B(),n=b.rooms.filter(r=>r.floor==id).length+b.decor.filter(d=>d.floor==id).length+b.stairs.filter(s=>s.from==id||s.to==id).length;
-  if(n&&!confirm(`Remove ${fname(b,id)}? Its rooms, decor and stairways go with it. You can undo this.`))return;
-  edit(b=>{b.floors=b.floors.filter(f=>f.id!=id);b.rooms=b.rooms.filter(r=>r.floor!=id);b.decor=b.decor.filter(d=>d.floor!=id);b.stairs=b.stairs.filter(s=>s.from!=id);b.stairs.forEach(s=>{if(s.to==id){s.to=null;s.void=0}});
-   const neg=b.floors.filter(f=>f.level<0).sort((x,y)=>x.level-y.level),pos=b.floors.filter(f=>f.level>=0).sort((x,y)=>x.level-y.level);neg.forEach((f,i)=>f.level=i-neg.length);pos.forEach((f,i)=>f.level=i);U.sel=null})}});
+ const a=e.target.dataset.act,row=e.target.closest('.frow');if(!a||!row)return;floorAct(a,row.dataset.id)});
 $('#stairList').addEventListener('click',e=>{const a=e.target.dataset.sa,id=e.target.dataset.id;if(!a)return;
  if(a=='go'){const s=B().stairs.find(q=>q.id==id);if(s){U.floor=s.from;U.sel={k:'stair',id};showTab('plan');renderAll()}}
  if(a=='del')edit(b=>{b.stairs=b.stairs.filter(s=>s.id!=id);U.sel=null})});
@@ -505,6 +655,10 @@ function runChecks(b){
   if(o.hp&&o.hp>f.height)out.push(['warn',`${nm} is taller (${o.hp} panels) than its floor (${f.height}).`])});
  let ov=0;for(let i=0;i<b.rooms.length&&ov<15;i++)for(let j=i+1;j<b.rooms.length&&ov<15;j++){const p=b.rooms[i],q=b.rooms[j];if(p.floor!=q.floor||p.type=='arch'||q.type=='arch')continue;
   if(p.x<q.x+q.w&&q.x<p.x+p.w&&p.y<q.y+q.h&&q.y<p.y+p.h){out.push(['warn',`${p.name} and ${q.name} overlap on ${fname(b,p.floor)}. Use an Archway / opening room if the overlap is a doorway.`]);ov++}}
+ b.floors.forEach(f=>{if(f.height<r.minH)out.push(['warn',`${f.name} is ${f.height} panels tall. The minimum is ${r.minH}.`])});
+ const reach=new Set([b.floors.find(f=>f.level==0).id]);for(let ch=true;ch;){ch=false;b.stairs.forEach(s=>{if(s.to&&s.from!=s.to){if(reach.has(s.from)&&!reach.has(s.to)){reach.add(s.to);ch=true}else if(reach.has(s.to)&&!reach.has(s.from)){reach.add(s.from);ch=true}}})}
+ asc(b).forEach(f=>{if(!reach.has(f.id))out.push([r.float?'info':'error',r.float?`${f.name} has no stairway linking it to the ground floor. Floating floors are allowed in your requirements, but whether the game accepts them is unverified.`:`${f.name} has no stairway linking it to the ground floor, so it would float with nothing connecting it. Add stairs, or allow floating floors under Requirements.`])});
+ asc(b).filter(f=>f.level>=1).forEach(f=>{const below=b.floors.find(q=>q.level==f.level-1);if(!below)return;const bad=b.rooms.filter(o=>o.floor==f.id&&o.type!='arch'&&!b.rooms.some(q=>q.floor==below.id&&q.type!='arch'&&ovl(q,o)));if(bad.length)out.push(['info',`${bad.slice(0,3).map(x=>x.name).join(', ')}${bad.length>3?' and more':''} on ${f.name} ha${bad.length==1?'s':'ve'} no room underneath on ${below.name}. Players report that unsupported Palworld structures can break down, so plan a wall or pillar beneath.`])});
  b.stairs.forEach(s=>{const sf=stairFloors(b,s);
   if(!s.to)out.push(['warn',`${s.name} connects only one floor. Pick the floor it leads to.`]);
   else if(!sf)out.push(['warn',`${s.name} starts and ends on the same floor.`]);
@@ -520,31 +674,35 @@ function runChecks(b){
  if(!b.rooms.length)out.push(['info','No rooms yet. Use Draw room on the plan to add one.']);
  if(!out.some(x=>x[0]=='error'||x[0]=='warn'))out.unshift(['ok','Every requirement is met.']);
  return out}
+function matTally(b){const t={};b.rooms.forEach(r=>{const f=fl(b,r.floor),k=matKey(b,r),e=t[k]||(t[k]={walls:0,found:0,ceil:0}),hp=r.hp||f.height;if(r.type!='arch'){e.walls+=2*(r.w+r.h)*hp;e.ceil+=(r.open||f.roof)?0:r.w*r.h}e.found+=r.w*r.h});return t}
 const tbl=(h,rows)=>rows.length?`<table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'<p class="hint">Nothing here yet.</p>';
 function renderDims(){
  const b=B(),L=layout(b),area=b.rooms.reduce((a,r)=>a+r.w*r.h,0);
  let bb='none';if(b.rooms.length){const x0=Math.min(...b.rooms.map(r=>r.x)),x1=Math.max(...b.rooms.map(r=>r.x+r.w)),y0=Math.min(...b.rooms.map(r=>r.y)),y1=Math.max(...b.rooms.map(r=>r.y+r.h));bb=`${x1-x0} × ${y1-y0}`}
  const above=b.floors.filter(f=>f.level>0).length,below=b.floors.filter(f=>f.level<0).length;
  $('#stats').innerHTML=[[`${b.w} × ${b.h}`,'grid (tiles)'],[b.floors.length,`floors (${above} above, ${below} below ground)`],[b.rooms.length,'rooms'],[area,'tiles of floor in rooms'],[bb,'footprint of all rooms'],[L.top,'panels above ground'],[-L.bot,'panels below ground'],[b.stairs.length,'stairways'],[b.decor.length,'decor items']].map(x=>`<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
- const R=b.req,rf=(k,l,mx)=>`<label class="f">${l}<input type="number" data-req="${k}" value="${R[k]}" min="${k=='radius'?0:1}" max="${mx}"></label>`;
- if(!$('#reqBar').dataset.built||$('#reqBar').dataset.base!=b.id||document.activeElement.closest&&!document.activeElement.closest('#reqBar')){$('#reqBar').innerHTML=rf('minH','Minimum room height (panels)',60)+rf('minSide','Minimum room width (tiles)',20)+rf('minStairW','Minimum stair width (tiles)',20)+rf('minVoid','Minimum open ceiling (tiles)',20)+rf('radius','Palbox build radius (tiles, 0 = off)',300);$('#reqBar').dataset.built=1;$('#reqBar').dataset.base=b.id}
+ const R=b.req,rf=(k,l,mx)=>`<label class="f">${l}<input type="number" data-req="${k}" value="${R[k]}" min="${k=='radius'?0:k=='minH'?2:1}" max="${mx}"></label>`;
+ if(!$('#reqBar').dataset.built||$('#reqBar').dataset.base!=b.id||document.activeElement.closest&&!document.activeElement.closest('#reqBar')){$('#reqBar').innerHTML=rf('minH','Minimum room height (panels)',60)+rf('minSide','Minimum room width (tiles)',20)+rf('minStairW','Minimum stair width (tiles)',20)+rf('minVoid','Minimum open ceiling (tiles)',20)+rf('radius','Palbox build radius (tiles, 0 = off)',300)+`<label class="chk" style="align-self:center"><input type="checkbox" data-req="float"${R.float?' checked':''}> Allow floating floors (unverified in game)</label>`;$('#reqBar').dataset.built=1;$('#reqBar').dataset.base=b.id}
  $('#checks').innerHTML=runChecks(b).map(c=>`<li><span class="tag ${c[0]}">${{error:'Fix',warn:'Check',info:'Note',ok:'OK'}[c[0]]}</span><span>${esc(c[1])}</span></li>`).join('');
  const cnt={};b.rooms.forEach(r=>cnt[r.floor]=(cnt[r.floor]||0)+1);
- $('#tFloors').innerHTML=tbl(['Floor','Level','Height (panels)','Rises from → to (panel)','Rooms','Floor area (tiles)'],asc(b).reverse().map(f=>[esc(f.name),lvl(f),f.height+(f.roof?' (open roof)':''),`${L.pos[f.id][0]} → ${L.pos[f.id][1]}`,cnt[f.id]||0,b.rooms.filter(r=>r.floor==f.id).reduce((a,r)=>a+r.w*r.h,0)]));
- $('#tRooms').innerHTML=tbl(['Room','Type','Floor','Position (x, y)','Size (tiles)','Height (panels)','Ceiling',''],b.rooms.map(r=>{const f=fl(b,r.floor);return[esc(r.name),TYPES[r.type][0],esc(f.name),`${r.x}, ${r.y}`,`${r.w} × ${r.h}`,r.hp||f.height,(r.open||f.roof)?'Open':'Glass',`<button class="b" type="button" data-roomgo="${r.id}">Edit on plan</button>`]}));
+ $('#tFloors').innerHTML=tbl(['Floor','Level','Height (panels)','Wall material','Rises from → to (panel)','Rooms','Floor area (tiles)'],asc(b).reverse().map(f=>[esc(f.name),lvl(f),f.height+(f.roof?' (open roof)':''),MATS[f.mat||b.mat||'glass'][0],`${L.pos[f.id][0]} → ${L.pos[f.id][1]}`,cnt[f.id]||0,b.rooms.filter(r=>r.floor==f.id).reduce((a,r)=>a+r.w*r.h,0)]));
+ $('#tRooms').innerHTML=tbl(['Room','Type','Floor','Position (x, y)','Size (tiles)','Height (panels)','Material','Ceiling',''],b.rooms.map(r=>{const f=fl(b,r.floor);return[esc(r.name),TYPES[r.type][0],esc(f.name),`${r.x}, ${r.y}`,`${r.w} × ${r.h}`,r.hp||f.height,MATS[matKey(b,r)][0],(r.open||f.roof)?'Open':'Closed',`<button class="b" type="button" data-roomgo="${r.id}">Edit on plan</button>`]}));
  $('#tStairs').innerHTML=tbl(['Stairway','Connects','Position (x, y)','Width × length','Faces','Open ceiling'],b.stairs.map(s=>[esc(s.name),`${esc(fname(b,s.from))} → ${s.to?esc(fname(b,s.to)):'not connected'}`,`${s.x}, ${s.y}`,`${Math.min(s.w,s.h)} × ${Math.max(s.w,s.h)}`,{N:'North',E:'East',S:'South',W:'West'}[s.dir],s.void?`${s.void} × ${s.void}`:'none']));
+ const mt=matTally(b);
+ $('#tMats').innerHTML=tbl(['Set','Unlock','Main resource','Wall panels','Foundations','Ceilings'],Object.keys(mt).map(k=>[`<span class="sw" style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${MATS[k][3]};margin-right:6px"></span>${MATS[k][0]}`,MATS[k][1],MATS[k][2],mt[k].walls,mt[k].found,mt[k].ceil]));
  const dc={};b.decor.forEach(d=>dc[d.item]=(dc[d.item]||0)+1);
  $('#tDecor').innerHTML=tbl(['Item','Count'],Object.keys(dc).map(k=>[`${DI[k][1]} ${esc(DI[k][2].replace(' (one per base)',''))}`,dc[k]]))}
 $('#tRooms').addEventListener('click',e=>{const id=e.target.dataset.roomgo;if(!id)return;const r=B().rooms.find(q=>q.id==id);if(r){U.floor=r.floor;U.sel={k:'room',id};showTab('plan');renderAll()}});
-$('#reqBar').addEventListener('change',e=>{const k=e.target.dataset.req;if(!k)return;const lim={minH:[1,60],minSide:[1,20],minStairW:[1,20],minVoid:[1,20],radius:[0,300]}[k];edit(b=>{b.req[k]=clamp(num(e.target.value,b.req[k]),lim[0],lim[1])})});
+$('#reqBar').addEventListener('change',e=>{const k=e.target.dataset.req;if(!k)return;if(k=='float'){const v=e.target.checked;edit(b=>{b.req.float=v});return}const lim={minH:[2,60],minSide:[1,20],minStairW:[1,20],minVoid:[1,20],radius:[0,300]}[k];edit(b=>{b.req[k]=clamp(num(e.target.value,b.req[k]),lim[0],lim[1])})});
 
 /* ---------- build order ---------- */
 function steps(b){
  const out=[],L=layout(b),pb=b.decor.find(d=>d.item=='palbox');
  out.push(['site','Pick the site and place the Palbox',pb?`Palbox is marked on ${fname(b,pb.floor)} at (${pb.x}, ${pb.y}). Place the real one there.`:'Place the Palbox first so the build radius is centred where you want it.']);
  const ordered=[...asc(b).filter(f=>f.level>=0),...asc(b).filter(f=>f.level<0).reverse()];
- ordered.forEach(f=>{const rs=b.rooms.filter(r=>r.floor==f.id);if(!rs.length)return;const area=rs.reduce((a,r)=>a+r.w*r.h,0);
-  out.push(['floor:'+f.id,`Build ${f.name}`,`${rs.length} room${rs.length==1?'':'s'}: ${rs.map(r=>`${r.name} (${r.w} × ${r.h}${r.hp?', '+r.hp+' panels':''})`).join('; ')}. About ${area} tiles of glass foundation, walls ${f.height} panels tall${f.roof?', open roof':', glass ceilings'}${f.level<0?'. This floor is below ground.':'.'}`])});
+ const mt0=matTally(b);if(Object.keys(mt0).length)out.push(['mats','Gather materials',Object.keys(mt0).map(k=>`${MATS[k][0]} set (${MATS[k][1]}, ${MATS[k][2]}): about ${mt0[k].walls} wall panels, ${mt0[k].found} foundations, ${mt0[k].ceil} ceilings`).join('. ')+'. Wall counts are generous because shared walls are counted twice.']);
+ ordered.forEach(f=>{const rs=b.rooms.filter(r=>r.floor==f.id);if(!rs.length)return;const area=rs.reduce((a,r)=>a+r.w*r.h,0),mn=[...new Set(rs.map(r=>MATS[matKey(b,r)][0]))].join(' and ');
+  out.push(['floor:'+f.id,`Build ${f.name}`,`${rs.length} room${rs.length==1?'':'s'}: ${rs.map(r=>`${r.name} (${r.w} × ${r.h}${r.hp?', '+r.hp+' panels':''})`).join('; ')}. About ${area} tiles of ${mn} foundation, walls ${f.height} panels tall${f.roof?', open roof':', '+mn+' ceilings'}${f.level<0?'. This floor is below ground.':'.'}`])});
  b.stairs.forEach(s=>{const sf=stairFloors(b,s);out.push(['stair:'+s.id,`Add ${s.name}`,sf?`From ${sf.lo.name} up to ${sf.hi.name}, ${Math.min(s.w,s.h)} wide and ${Math.max(s.w,s.h)} long at (${s.x}, ${s.y}), facing ${{N:'north',E:'east',S:'south',W:'west'}[s.dir]}${s.void?`, with a ${s.void} × ${s.void} open ceiling`:''}.`:`At (${s.x}, ${s.y}). Pick the floors it connects.`])});
  if(b.decor.filter(d=>d.item!='palbox').length){const c=b.decor.filter(d=>d.item!='palbox').length;out.push(['decor','Place decor and foliage',`${c} item${c==1?'':'s'} planned. See the Decor table on the Dimensions tab for the list.`])}
  out.push(['final','Test and assign Pals','Walk your largest Pal through every room and door, then assign Pals to each room.']);
@@ -561,12 +719,13 @@ function renderOrder(){
 function renderBar(){
  $('#baseSel').innerHTML=Object.values(S.bases).map(b=>`<option value="${esc(b.id)}"${b.id==S.cur?' selected':''}>${esc(b.name)}</option>`).join('');
  $('#baseName').value=B().name;$('#bUndo').disabled=!U.hist.u.length;$('#bRedo').disabled=!U.hist.r.length}
-function switchBase(id){S.cur=id;U.hist={u:[],r:[]};U.sel=null;U.draft=null;U.drag=null;U.view.pos=0;fixFloor();if(U.fit)fit();save();renderAll()}
+$('#nMat').innerHTML=matOpts('glass');
+function switchBase(id){S.cur=id;U.hist={u:[],r:[]};U.prompt=null;U.sd=null;U.sel=null;U.draft=null;U.drag=null;U.view.pos=0;fixFloor();if(U.fit)fit();save();renderAll()}
 $('#baseSel').addEventListener('change',e=>switchBase(e.target.value));
 $('#baseName').addEventListener('change',e=>{const v=e.target.value.trim();if(!v){e.target.value=B().name;return}edit(b=>{b.name=v.slice(0,60)})});
 $('#bNew').addEventListener('click',()=>{$('#newPanel').hidden=!$('#newPanel').hidden;$('#nName').value='New base '+(Object.keys(S.bases).length+1);$('#nName').focus()});
 $('#nCancel').addEventListener('click',()=>{$('#newPanel').hidden=true});
-$('#nGo').addEventListener('click',()=>{const b=mkBase(($('#nName').value.trim()||'New base').slice(0,60),num($('#nW').value,20),num($('#nH').value,20));S.bases[b.id]=b;$('#newPanel').hidden=true;U.fit=true;switchBase(b.id)});
+$('#nGo').addEventListener('click',()=>{const b=mkBase(($('#nName').value.trim()||'New base').slice(0,60),num($('#nW').value,20),num($('#nH').value,20),$('#nMat').value);S.bases[b.id]=b;$('#newPanel').hidden=true;U.fit=true;switchBase(b.id)});
 $('#bDup').addEventListener('click',()=>{const c=sane(JSON.parse(JSON.stringify(B())));c.id=uid();c.name=(B().name+' copy').slice(0,60);S.bases[c.id]=c;switchBase(c.id)});
 $('#bDel').addEventListener('click',()=>{if(!confirm(`Delete "${B().name}"? This can't be undone. Export it first if you want a copy.`))return;delete S.bases[S.cur];if(!Object.keys(S.bases).length){const b=mkBase('My first base',20,20);S.bases[b.id]=b}switchBase(Object.keys(S.bases)[0])});
 $('#bUndo').addEventListener('click',undo);$('#bRedo').addEventListener('click',redo);
@@ -580,15 +739,15 @@ document.addEventListener('keydown',e=>{
  if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='z'){e.preventDefault();e.shiftKey?redo():undo();return}
  if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='y'){e.preventDefault();redo();return}
  if(e.key=='Escape'){U.armed='';U.tool='select';U.sel=null;U.draft=null;U.drag=null;renderAll();return}
- if(typing||U.tab!='plan')return;
+ if(typing||(U.tab!='plan'&&U.tab!='side'))return;
  const k=e.key.toLowerCase();
- if(k=='v')setTool('select');else if(k=='r')setTool('room');else if(k=='s')setTool('stair');
- const o=getObj(U.sel);if(!o)return;
+ if(U.tab=='plan'){if(k=='v')setTool('select');else if(k=='r')setTool('room');else if(k=='s')setTool('stair')}
+ const o=getObj(U.sel);if(!o||U.sel.k=='floor')return;
  if(k=='delete'||k=='backspace'){e.preventDefault();const kk=U.sel.k;edit(b=>{const L=kk=='room'?b.rooms:kk=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});return}
  const dx={arrowleft:-1,arrowright:1}[k]||0,dy={arrowup:-1,arrowdown:1}[k]||0;
  if(dx||dy){e.preventDefault();const b=B();edit(()=>{o.x=clamp(o.x+dx,0,Math.max(0,b.w-(o.w||1)));o.y=clamp(o.y+dy,0,Math.max(0,b.h-(o.h||1)))})}});
 
-function renderAll(){renderBar();renderPlanControls();renderPlan();renderProps();renderDecor();renderSide();renderFloors();renderDims();renderOrder()}
+function renderAll(){renderBar();renderPlanControls();renderPlan();renderProps();renderDecor();renderSide();renderFloors();renderDims();renderOrder();renderPrompt()}
 load();fixFloor();fit();renderAll();
 </script>
 </body></html>
