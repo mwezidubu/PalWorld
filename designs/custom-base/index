@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MegaBase Builder: Custom Base</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f6f4;--sf:#fff;--ink:#0b2630;--mu:#3f6068;--ln:#bcd0cc;--gold:#a87000;--mine:#d9480f;--breed:#d1155f;--cook:#12922f;--stor:#2447d6;--hub:#d9a000;--rest:#7b3fb8;--walk:#0b8a8f;--earth:#8a6a3a;--bad:#c0262d;
+box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#061419;--sf:#0d2630;--ink:#f1f8f6;--mu:#a3c0c3;--ln:#1d4552;--gold:#ffd23f;--mine:#ff8a3d;--breed:#ff5c93;--cook:#46e07a;--stor:#6f9bff;--hub:#ffd23f;--rest:#c79bff;--walk:#4fe0d6;--earth:#b8924f;--bad:#ff7b80}}
+:root[data-theme="dark"]{--bg:#061419;--sf:#0d2630;--ink:#f1f8f6;--mu:#a3c0c3;--ln:#1d4552;--gold:#ffd23f;--mine:#ff8a3d;--breed:#ff5c93;--cook:#46e07a;--stor:#6f9bff;--hub:#ffd23f;--rest:#c79bff;--walk:#4fe0d6;--earth:#b8924f;--bad:#ff7b80}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15;font-weight:800}
+h1{font-size:clamp(1.6rem,4vw,2.4rem)}h2{font-size:1.3rem;margin-bottom:6px}h3{font-size:1.05rem;margin:14px 0 6px}
+.wrap{max-width:1200px;margin:auto;padding:16px 16px 48px}
+.back{margin:0 0 6px;font-weight:700;font-size:.92rem}.back a{color:var(--ink)}
+.lead{color:var(--mu);font-weight:500;margin:6px 0 14px;max-width:70ch}
+.card{background:var(--sf);border:2px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px}.bar:last-child{margin-bottom:0}
+.sp{flex:1}
+button.b{font:inherit;font-weight:700;padding:7px 12px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:8px;cursor:pointer}
+button.b[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.b:disabled{opacity:.45;cursor:default}
+button.danger{border-color:var(--bad);color:var(--bad)}
+input,select{font:inherit;font-weight:600;padding:6px 8px;border:2px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--ink);max-width:100%}
+input[type=number]{width:84px}input[type=range]{padding:0;width:120px;border:0;background:none;accent-color:var(--ink)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--cook);padding:0}
+label.f{display:flex;flex-direction:column;font-size:.8rem;font-weight:700;color:var(--mu);gap:3px}
+label.chk{display:flex;gap:6px;align-items:center;font-weight:700;font-size:.9rem}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+nav{display:flex;gap:6px;margin:4px 0 14px;overflow-x:auto}
+nav button{font:inherit;font-weight:700;padding:8px 14px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.view{display:none}.view.on{display:block}
+#v-plan.on{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:16px;align-items:start}
+@media(max-width:900px){#v-plan.on{grid-template-columns:1fr}}
+#cvwrap{overflow:auto;max-height:72vh;border:2px solid var(--ln);border-radius:8px;background:var(--bg)}
+#cv{display:block;touch-action:none;max-width:none;user-select:none}
+#sv{width:100%;height:auto;display:block}
+svg text{font:700 11px system-ui,sans-serif;fill:var(--ink);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--sf);stroke-width:3px;stroke-linejoin:round}
+svg .sm{font-size:10px;fill:var(--mu)}svg .al{text-anchor:start}svg .ar{text-anchor:end}
+svg .dc{stroke:none}
+.hint{color:var(--mu);font-size:.9rem;font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;font-weight:600;margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.grid2 .wide{grid-column:1/-1}.grid2 input,.grid2 select{width:100%}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--ln);vertical-align:top;font-size:.9rem}th{font-weight:700;color:var(--mu)}
+.tw{overflow-x:auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0 4px}
+.stat{border:2px solid var(--ln);border-radius:10px;padding:8px 10px}.stat b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.4rem;line-height:1.1}.stat span{font-size:.8rem;color:var(--mu);font-weight:600}
+.chk-list{list-style:none;margin:6px 0;padding:0}
+.chk-list li{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln);font-weight:600;font-size:.92rem}
+.tag{flex:none;font-weight:800;font-size:.75rem;border-radius:6px;padding:1px 7px;height:fit-content;margin-top:2px;color:#fff}
+.tag.error{background:var(--bad)}.tag.warn{background:#b86a00}.tag.info{background:var(--stor)}.tag.ok{background:var(--cook)}
+.dlist{max-height:240px;overflow:auto;border:2px solid var(--ln);border-radius:8px;margin-top:8px}
+.dlist div{display:flex;gap:8px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--ln);font-size:.88rem;font-weight:600}
+.dlist div span.g{flex:1}
+.dlist button{font:inherit;font-size:.8rem;font-weight:700;padding:2px 8px;border:2px solid var(--ln);background:var(--bg);color:var(--ink);border-radius:6px;cursor:pointer}
+.frow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:10px 0;border-bottom:1px solid var(--ln)}
+.badge{font-weight:800;font-size:.8rem;border:2px solid var(--ln);border-radius:999px;padding:1px 10px;align-self:center}
+.steps{list-style:none;padding:0;margin:0}
+.steps li{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--ln)}
+.steps input{width:22px;height:22px;margin-top:2px;flex:none}
+.steps b{display:block}.steps span{color:var(--mu);font-size:.92rem;font-weight:500}
+.steps li.done b{text-decoration:line-through;opacity:.6}
+.pbar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:8px 0 4px}.pbar div{height:100%;width:0;background:var(--cook);transition:width .25s}
+.note{border-left:4px solid var(--gold);padding:8px 12px;margin-top:12px;font-size:.9rem;color:var(--mu);font-weight:500}
+</style></head>
+<body><div class="wrap">
+<p class="back"><a href="../../index.html">&larr; All MegaBase designs</a></p>
+<h1>MegaBase Builder: Custom Base</h1>
+<p class="lead">Start a blank base, draw rooms on a grid from 5 × 5 up to 100 × 100, stack floors above and below ground, add stairways, and place decor one item at a time.</p>
+
+<div class="card" id="basebar">
+<div class="bar">
+<label class="f">Base<select id="baseSel"></select></label>
+<label class="f">Name<input id="baseName" maxlength="60" aria-label="Base name"></label>
+<button class="b" id="bNew" type="button">New base</button>
+<button class="b" id="bDup" type="button">Duplicate</button>
+<button class="b danger" id="bDel" type="button">Delete</button>
+<span class="sp"></span>
+<button class="b" id="bUndo" type="button">Undo</button>
+<button class="b" id="bRedo" type="button">Redo</button>
+<button class="b" id="bExp" type="button">Export</button>
+<button class="b" id="bImp" type="button">Import</button>
+<input type="file" id="impFile" accept=".json,application/json" hidden>
+</div>
+<div id="newPanel" hidden>
+<h3 style="margin-top:4px">Start a new blank base</h3>
+<div class="bar">
+<label class="f">Base name<input id="nName" maxlength="60" value="New base"></label>
+<label class="f">Grid width (5 to 100)<input type="number" id="nW" min="5" max="100" value="20"></label>
+<label class="f">Grid height (5 to 100)<input type="number" id="nH" min="5" max="100" value="20"></label>
+<button class="b" id="nGo" type="button" aria-pressed="true">Create blank base</button>
+<button class="b" id="nCancel" type="button">Cancel</button>
+</div>
+<div class="hint">New bases start with one empty ground floor. You can add floors above and below ground later.</div>
+</div>
+</div>
+
+<nav role="tablist" aria-label="Views">
+<button role="tab" aria-selected="true" data-v="plan">Top-down plan</button>
+<button role="tab" aria-selected="false" data-v="side">Side view</button>
+<button role="tab" aria-selected="false" data-v="floors">Floors and stairs</button>
+<button role="tab" aria-selected="false" data-v="dims">Dimensions and checks</button>
+<button role="tab" aria-selected="false" data-v="order">Build order</button>
+</nav>
+
+<main>
+<section class="view on" id="v-plan">
+<div class="card">
+<div class="bar" id="tools">
+<button class="b" type="button" data-tool="select" aria-pressed="true">Select / move</button>
+<button class="b" type="button" data-tool="room" aria-pressed="false">Draw room</button>
+<button class="b" type="button" data-tool="stair" aria-pressed="false">Draw stairs</button>
+<label class="f">New room type<select id="newType"></select></label>
+</div>
+<div class="bar">
+<label class="f">Floor<select id="floorSel"></select></label>
+<button class="b" id="addUp" type="button">+ Floor above</button>
+<button class="b" id="addDown" type="button">+ Basement below</button>
+<label class="f">Grid width<input type="number" id="gW" min="5" max="100"></label>
+<label class="f">Grid height<input type="number" id="gH" min="5" max="100"></label>
+<label class="f">Zoom<input type="range" id="zoom" min="4" max="40"></label>
+<button class="b" id="fitB" type="button">Fit</button>
+</div>
+<div class="bar">
+<label class="chk"><input type="checkbox" id="gridT" checked> Tile grid</label>
+<label class="chk"><input type="checkbox" id="ghostT" checked> Show floors above and below</label>
+</div>
+<div class="hint" id="toolHint" style="margin-bottom:8px"></div>
+<div id="cvwrap"><svg id="cv" role="img" aria-label="Top-down base plan"></svg></div>
+<div class="legend" id="legend"></div>
+</div>
+<div>
+<div class="card" id="props" aria-live="polite"></div>
+<div class="card" id="decorCard">
+<h2>Decor and foliage</h2>
+<label class="f">Item to place<select id="decorSel"></select></label>
+<div class="hint" id="decorHint" style="margin-top:6px"></div>
+<div class="bar" style="margin-top:8px"><button class="b danger" id="decorClear" type="button">Clear all decor</button><span class="hint" id="decorCount"></span></div>
+<div id="decorSum" class="hint"></div>
+<div id="decorList" class="dlist"></div>
+</div>
+</div>
+</section>
+
+<section class="view" id="v-side">
+<div class="card">
+<h2>Side view</h2>
+<div class="bar">
+<label class="f">View<select id="axisSel"><option value="front">Front (looking north, left to right is west to east)</option><option value="side">Side (looking east, left to right is north to south)</option></select></label>
+<label class="chk"><input type="checkbox" id="sliceT"> Show only one slice</label>
+<label class="f" id="sliceWrap">Slice position<input type="range" id="sliceR" min="0" max="19" value="0"></label>
+<span class="hint" id="sliceTxt"></span>
+</div>
+<div class="hint" style="margin-bottom:8px">One column is one tile and one row is one panel. Click a floor band to make it the floor you edit on the plan, or click a room to select it.</div>
+<svg id="sv" role="img" aria-label="Side view of all floors"></svg>
+</div>
+</section>
+
+<section class="view" id="v-floors">
+<div class="card">
+<h2>Floors</h2>
+<div class="bar"><button class="b" id="fAddUp" type="button">+ Floor above</button><button class="b" id="fAddDown" type="button">+ Basement below</button></div>
+<div id="floorList"></div>
+<div class="note">The ground floor can't be removed. Floor height is in glass panels and also sets the default height of every room on that floor.</div>
+</div>
+<div class="card">
+<h2>Stairways</h2>
+<div class="hint">Draw a stairway on the plan with the Draw stairs tool, then pick which floors it connects in the Selected panel.</div>
+<div id="stairList" class="tw"></div>
+</div>
+</section>
+
+<section class="view" id="v-dims">
+<div class="card"><h2>Summary</h2><div class="stats" id="stats"></div></div>
+<div class="card">
+<h2>Requirements</h2>
+<div class="hint">Change these to match what your guild needs. Every check below updates straight away.</div>
+<div class="bar" style="margin-top:8px" id="reqBar"></div>
+<ul class="chk-list" id="checks"></ul>
+</div>
+<div class="card tw"><h2>Floors</h2><div id="tFloors"></div></div>
+<div class="card tw"><h2>Rooms</h2><div id="tRooms"></div></div>
+<div class="card tw"><h2>Stairways</h2><div id="tStairs"></div></div>
+<div class="card tw"><h2>Decor</h2><div id="tDecor"></div></div>
+</section>
+
+<section class="view" id="v-order">
+<div class="card">
+<h2>Build order</h2>
+<div class="hint">This list is made from your plan, so it changes as you draw. It assumes all building technology is unlocked and every floor, wall and ceiling is glass.</div>
+<div class="pbar"><div id="pb"></div></div><div class="hint" id="pt"></div>
+<ol class="steps" id="steps"></ol>
+</div>
+</section>
+</main>
+</div>
+<script>
+/* Per-design settings. When you copy this file for a new design, change id and name.
+   The id keeps saved bases separate between designs. */
+const DESIGN={id:'custom-base',name:'MegaBase Builder: Custom Base'};
+const KEY='megabase:'+DESIGN.id+':data';
+const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const num=(v,d)=>{v=Math.round(Number(v));return Number.isFinite(v)?v:d};
+const gid=x=>/^[\w-]{1,24}$/.test(String(x))?String(x):uid();
+const trunc=(s,n)=>s.length>n?s.slice(0,Math.max(3,Math.floor(n)-1))+'…':s;
+
+const TYPES={mine:['Mining & Crafting','--mine'],breed:['Breeding','--breed'],cook:['Cooking & Farming','--cook'],stor:['Misc & Storage','--stor'],hub:['Hub / Tower','--hub'],rest:['Rest / Living','--rest'],walk:['Walkway','--walk'],arch:['Archway / opening','--hub'],other:['Other','--mu']};
+const DEC=[['Foliage',[['tree','🌳','Tree'],['palm','🌴','Palm'],['fern','🌿','Fern'],['flowers','🌸','Flowers'],['tulip','🌷','Tulips'],['sunflower','🌻','Sunflower'],['pot','🪴','Potted plant'],['mush','🍄','Mushroom'],['cactus','🌵','Cactus'],['bamboo','🎋','Bamboo'],['clover','🍀','Clover']]],
+['Decor',[['lantern','🏮','Lantern'],['lamp','💡','Lamp'],['candle','🕯️','Candle'],['seat','🪑','Seat'],['bed','🛏️','Bed'],['rock','🪨','Rock'],['statue','🗿','Statue'],['fountain','⛲','Fountain'],['banner','🚩','Banner']]],
+['Base markers',[['palbox','📦','Palbox (one per base)']]]];
+const DI={};DEC.forEach(g=>g[1].forEach(d=>DI[d[0]]=d));
+
+/* ---------- data ---------- */
+function mkBase(name,w,h){return{id:uid(),name,w:clamp(w,5,100),h:clamp(h,5,100),floors:[{id:uid(),name:'Ground floor',level:0,height:6,roof:false}],rooms:[],stairs:[],decor:[],req:{minH:5,minSide:4,minStairW:3,minVoid:3,radius:0},done:{}}}
+function sane(o){
+ if(!o||typeof o!=='object')return null;
+ const b=mkBase(String(o.name||'Imported base').slice(0,60),num(o.w,20),num(o.h,20));
+ if(typeof o.id==='string'&&/^[\w-]{1,24}$/.test(o.id))b.id=o.id;
+ let fs=Array.isArray(o.floors)?o.floors.slice(0,40).filter(f=>f&&typeof f==='object').map(f=>({id:gid(f.id),name:String(f.name||'Floor').slice(0,40),level:num(f.level,0),height:clamp(num(f.height,6),2,60),roof:!!f.roof})):[];
+ const seen=new Set();fs=fs.filter(f=>!seen.has(f.id)&&seen.add(f.id));
+ const neg=fs.filter(f=>f.level<0).sort((a,c)=>a.level-c.level),pos=fs.filter(f=>f.level>=0).sort((a,c)=>a.level-c.level);
+ if(!pos.length)pos.push(b.floors[0]);
+ neg.forEach((f,i)=>f.level=i-neg.length);pos.forEach((f,i)=>f.level=i);
+ b.floors=[...neg,...pos];
+ const ids=new Set(b.floors.map(f=>f.id));
+ const P=v=>clamp(num(v,0),-500,500),S=(v,d)=>clamp(num(v,d),1,100);
+ b.rooms=(Array.isArray(o.rooms)?o.rooms:[]).slice(0,3000).filter(r=>r&&ids.has(r.floor)).map(r=>({id:gid(r.id),name:String(r.name||'Room').slice(0,40),type:TYPES[r.type]?r.type:'other',floor:r.floor,x:P(r.x),y:P(r.y),w:S(r.w,1),h:S(r.h,1),round:!!r.round,open:!!r.open,hp:clamp(num(r.hp,0),0,60)}));
+ b.stairs=(Array.isArray(o.stairs)?o.stairs:[]).slice(0,500).filter(s=>s&&ids.has(s.from)).map(s=>({id:gid(s.id),name:String(s.name||'Stair').slice(0,40),from:s.from,to:ids.has(s.to)?s.to:null,x:P(s.x),y:P(s.y),w:S(s.w,3),h:S(s.h,5),dir:'NESW'.includes(s.dir)&&s.dir?s.dir:'N',void:clamp(num(s.void,0),0,12)}));
+ b.decor=(Array.isArray(o.decor)?o.decor:[]).slice(0,20000).filter(d=>d&&DI[d.item]&&ids.has(d.floor)).map(d=>({id:gid(d.id),item:d.item,floor:d.floor,x:P(d.x),y:P(d.y)}));
+ const q=o.req||{};b.req={minH:clamp(num(q.minH,5),1,60),minSide:clamp(num(q.minSide,4),1,20),minStairW:clamp(num(q.minStairW,3),1,20),minVoid:clamp(num(q.minVoid,3),1,20),radius:clamp(num(q.radius,0),0,300)};
+ b.done={};if(o.done&&typeof o.done==='object')for(const k in o.done)if(o.done[k]===true&&k.length<60)b.done[k]=true;
+ return b}
+let S={bases:{},cur:null};
+function load(){
+ try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&r.bases)for(const id in r.bases){const b=sane(r.bases[id]);if(b){b.id=id;S.bases[id]=b}}if(r&&S.bases[r.cur])S.cur=r.cur}catch(e){}
+ if(!Object.keys(S.bases).length){const b=mkBase('My first base',20,20);S.bases[b.id]=b}
+ if(!S.cur||!S.bases[S.cur])S.cur=Object.keys(S.bases)[0]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const B=()=>S.bases[S.cur];
+const U={tab:'plan',tool:'select',floor:null,sel:null,armed:'',zoom:24,fit:true,grid:true,ghost:true,newType:'other',view:{axis:'front',slice:false,pos:0},drag:null,draft:null,hist:{u:[],r:[]}};
+const fl=(b,id)=>b.floors.find(f=>f.id===id);
+const asc=b=>b.floors.slice().sort((a,c)=>a.level-c.level);
+const fname=(b,id)=>{const f=fl(b,id);return f?f.name:'(none)'};
+const lvl=f=>f.level==0?'ground':f.level>0?f.level+' above':(-f.level)+' below';
+function fixFloor(){const b=B();if(!fl(b,U.floor))U.floor=b.floors.find(f=>f.level==0).id}
+function fit(){const b=B();U.zoom=clamp(Math.floor(620/Math.max(b.w,b.h)),4,40)}
+
+/* ---------- history and editing ---------- */
+function snap(){U.hist.u.push(JSON.stringify(B()));if(U.hist.u.length>60)U.hist.u.shift();U.hist.r=[]}
+function restore(js){const b=sane(JSON.parse(js));b.id=S.cur;S.bases[S.cur]=b;U.sel=null;U.drag=null;U.draft=null;fixFloor();save();renderAll()}
+function undo(){if(!U.hist.u.length)return;U.hist.r.push(JSON.stringify(B()));restore(U.hist.u.pop())}
+function redo(){if(!U.hist.r.length)return;U.hist.u.push(JSON.stringify(B()));restore(U.hist.r.pop())}
+function edit(fn){snap();fn(B());fixFloor();save();renderAll()}
+
+/* ---------- geometry ---------- */
+const inRect=(o,t)=>t.x>=o.x&&t.x<o.x+o.w&&t.y>=o.y&&t.y<o.y+o.h;
+const getObj=sel=>{if(!sel)return null;const b=B();const L=sel.k=='room'?b.rooms:sel.k=='stair'?b.stairs:b.decor;return L.find(o=>o.id==sel.id)||null};
+function hit(t){const b=B(),f=U.floor;
+ const d=b.decor.find(d=>d.floor==f&&d.x==t.x&&d.y==t.y);if(d)return{k:'decor',id:d.id};
+ for(let i=b.stairs.length-1;i>=0;i--){const s=b.stairs[i];if((s.from==f||s.to==f)&&inRect(s,t))return{k:'stair',id:s.id}}
+ for(let i=b.rooms.length-1;i>=0;i--){const r=b.rooms[i];if(r.floor==f&&inRect(r,t))return{k:'room',id:r.id}}
+ return null}
+function voidRect(s){if(!s.void||!s.to)return null;const v=s.void,cx=s.x+s.w/2,cy=s.y+s.h/2;let x,y;
+ if(s.dir=='N'){x=Math.round(cx-v/2);y=s.y-v}else if(s.dir=='S'){x=Math.round(cx-v/2);y=s.y+s.h}else if(s.dir=='E'){x=s.x+s.w;y=Math.round(cy-v/2)}else{x=s.x-v;y=Math.round(cy-v/2)}
+ return{x,y,w:v,h:v}}
+function stairFloors(b,s){const a=fl(b,s.from),c=fl(b,s.to);if(!a||!c||a.id==c.id)return null;return a.level<c.level?{lo:a,hi:c}:{lo:c,hi:a}}
+function layout(b){const pos={};let y=0;asc(b).filter(f=>f.level>=0).forEach(f=>{pos[f.id]=[y,y+f.height];y+=f.height});const top=y;y=0;asc(b).filter(f=>f.level<0).reverse().forEach(f=>{pos[f.id]=[y-f.height,y];y-=f.height});return{pos,top,bot:y}}
+
+/* ---------- top-down plan ---------- */
+const M=26;
+function renderPlan(){
+ const b=B(),z=U.zoom,W=b.w,H=b.h,cv=$('#cv'),X=t=>M+t*z,Y=t=>M+t*z;
+ cv.setAttribute('width',W*z+2*M);cv.setAttribute('height',H*z+2*M);cv.setAttribute('viewBox',`0 0 ${W*z+2*M} ${H*z+2*M}`);
+ let h=`<defs><pattern id="g1" x="${M}" y="${M}" width="${z}" height="${z}" patternUnits="userSpaceOnUse"><path d="M${z} 0V${z}M0 ${z}H${z}" fill="none" stroke="var(--ln)" stroke-width=".8"/></pattern><pattern id="g5" x="${M}" y="${M}" width="${5*z}" height="${5*z}" patternUnits="userSpaceOnUse"><path d="M${5*z} 0V${5*z}M0 ${5*z}H${5*z}" fill="none" stroke="var(--mu)" stroke-opacity=".55" stroke-width="1"/></pattern></defs>`;
+ h+=`<rect x="${M}" y="${M}" width="${W*z}" height="${H*z}" fill="var(--sf)" stroke="var(--ink)" stroke-width="2"/>`;
+ if(U.grid)h+=`<rect x="${M}" y="${M}" width="${W*z}" height="${H*z}" fill="url(#g1)"/><rect x="${M}" y="${M}" width="${W*z}" height="${H*z}" fill="url(#g5)"/>`;
+ for(let i=0;i<=W;i+=5)h+=`<text x="${X(i)}" y="${M-9}" class="sm">${i}</text>`;
+ for(let i=0;i<=H;i+=5)h+=`<text x="${M-5}" y="${Y(i)+3}" class="sm ar">${i}</text>`;
+ if(U.view.slice){const p=U.view.pos;h+=U.view.axis=='front'?`<rect x="${M}" y="${Y(p)}" width="${W*z}" height="${z}" fill="var(--gold)" fill-opacity=".3" pointer-events="none"/>`:`<rect x="${X(p)}" y="${M}" width="${z}" height="${H*z}" fill="var(--gold)" fill-opacity=".3" pointer-events="none"/>`}
+ const fs=asc(b),ix=fs.findIndex(f=>f.id==U.floor);
+ if(U.ghost)[[fs[ix-1],'6 4'],[fs[ix+1],'2 3']].forEach(([f,da])=>{if(f)b.rooms.filter(r=>r.floor==f.id).forEach(r=>h+=`<rect x="${X(r.x)}" y="${Y(r.y)}" width="${r.w*z}" height="${r.h*z}" fill="none" stroke="var(--mu)" stroke-dasharray="${da}" stroke-width="1.5" opacity=".75" pointer-events="none"/>`)});
+ b.rooms.filter(r=>r.floor==U.floor).forEach(r=>{const c=`var(${TYPES[r.type][1]})`,sel=U.sel&&U.sel.k=='room'&&U.sel.id==r.id,arch=r.type=='arch';
+  h+=`<rect x="${X(r.x)+1}" y="${Y(r.y)+1}" width="${r.w*z-2}" height="${r.h*z-2}" rx="${r.round?Math.min(r.w,r.h)*z*.28:3}" fill="${c}" fill-opacity="${arch?.16:.34}" stroke="${c}" stroke-width="${sel?4:2.5}"${arch?' stroke-dasharray="5 3"':''}/>`;
+  if(r.w*z>=44&&r.h*z>=28){const cx=X(r.x+r.w/2),cy=Y(r.y+r.h/2),f=fl(b,r.floor);h+=`<text x="${cx}" y="${cy-2}">${esc(trunc(r.name,r.w*z/6.8))}</text>`;if(r.h*z>=44)h+=`<text x="${cx}" y="${cy+12}" class="sm">${r.w} × ${r.h} · ${r.hp||f.height} panels</text>`}});
+ b.stairs.forEach(s=>{const sf=stairFloors(b,s);if(s.from!=U.floor&&s.to!=U.floor)return;const upperHere=sf&&sf.hi.id==U.floor,sel=U.sel&&U.sel.k=='stair'&&U.sel.id==s.id;
+  h+=`<rect x="${X(s.x)+1}" y="${Y(s.y)+1}" width="${s.w*z-2}" height="${s.h*z-2}" fill="var(--ink)" fill-opacity="${upperHere?.08:.24}" stroke="var(--ink)" stroke-width="${sel?4:2}"${upperHere?' stroke-dasharray="4 3"':''}/>`;
+  if(z>=8){const vert=s.dir=='N'||s.dir=='S',n=vert?s.h:s.w;for(let i=1;i<n;i++)h+=vert?`<line x1="${X(s.x)}" x2="${X(s.x+s.w)}" y1="${Y(s.y+i)}" y2="${Y(s.y+i)}" stroke="var(--ink)" stroke-opacity=".45" pointer-events="none"/>`:`<line y1="${Y(s.y)}" y2="${Y(s.y+s.h)}" x1="${X(s.x+i)}" x2="${X(s.x+i)}" stroke="var(--ink)" stroke-opacity=".45" pointer-events="none"/>`}
+  if(s.w*z>=26&&s.h*z>=26)h+=`<text x="${X(s.x+s.w/2)}" y="${Y(s.y+s.h/2)+4}">${{N:'↑',E:'→',S:'↓',W:'←'}[s.dir]} stair</text>`;
+  const v=voidRect(s);if(v)h+=`<rect x="${X(v.x)}" y="${Y(v.y)}" width="${v.w*z}" height="${v.h*z}" fill="var(--bg)" fill-opacity=".6" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 3" pointer-events="none"/>`+(v.w*z>=34?`<text x="${X(v.x+v.w/2)}" y="${Y(v.y+v.h/2)+4}" class="sm">opening</text>`:'')});
+ const fz=Math.max(8,z*.78);
+ b.decor.filter(d=>d.floor==U.floor).forEach(d=>{const sel=U.sel&&U.sel.k=='decor'&&U.sel.id==d.id;if(sel)h+=`<rect x="${X(d.x)}" y="${Y(d.y)}" width="${z}" height="${z}" fill="none" stroke="var(--gold)" stroke-width="3"/>`;h+=`<text class="dc" x="${X(d.x+.5)}" y="${Y(d.y+.5)+fz*.35}" style="font-size:${fz}px;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${DI[d.item][1]}</text>`});
+ const o=getObj(U.sel);
+ if(o&&(U.sel.k=='room'||U.sel.k=='stair')&&(U.sel.k=='stair'||o.floor==U.floor)){h+=`<rect x="${X(o.x)}" y="${Y(o.y)}" width="${o.w*z}" height="${o.h*z}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 3" pointer-events="none"/><rect x="${X(o.x+o.w)-5}" y="${Y(o.y+o.h)-5}" width="10" height="10" fill="var(--ink)" stroke="var(--bg)" stroke-width="1.5" pointer-events="none"/>`}
+ if(U.draft){const d=U.draft;h+=`<rect x="${X(d.x)}" y="${Y(d.y)}" width="${d.w*z}" height="${d.h*z}" fill="var(--gold)" fill-opacity=".25" stroke="var(--gold)" stroke-width="3" stroke-dasharray="6 3" pointer-events="none"/><text x="${X(d.x+d.w/2)}" y="${Y(d.y+d.h/2)+4}">${d.w} × ${d.h}</text>`}
+ cv.innerHTML=h}
+const cvRect=()=>$('#cv').getBoundingClientRect();
+function tileAt(e,inside){const r=cvRect(),b=B();let x=Math.floor((e.clientX-r.left-M)/U.zoom),y=Math.floor((e.clientY-r.top-M)/U.zoom);return inside?{x:clamp(x,0,b.w-1),y:clamp(y,0,b.h-1)}:{x,y}}
+const inGrid=t=>{const b=B();return t.x>=0&&t.y>=0&&t.x<b.w&&t.y<b.h};
+function nextName(b,type){if(type=='other')return 'Room '+(b.rooms.filter(r=>r.type=='other').length+1);const n=b.rooms.filter(r=>r.type==type).length;return TYPES[type][0]+(n?' '+(n+1):'')}
+function placeDecor(t){const it=U.armed;edit(b=>{b.decor=b.decor.filter(d=>!(d.floor==U.floor&&d.x==t.x&&d.y==t.y)&&!(it=='palbox'&&d.item=='palbox'));b.decor.push({id:uid(),item:it,floor:U.floor,x:t.x,y:t.y})})}
+const cv=$('#cv');
+cv.addEventListener('pointerdown',e=>{
+ if(e.button!==0)return;const b=B(),t=tileAt(e);
+ if(U.armed){if(inGrid(t))placeDecor(t);return}
+ if(U.tool=='room'||U.tool=='stair'){if(!inGrid(t))return;const tc=tileAt(e,true);U.drag={m:'draw',s:tc};U.draft={x:tc.x,y:tc.y,w:1,h:1};cv.setPointerCapture(e.pointerId);renderPlan();return}
+ const o=getObj(U.sel),r=cvRect();
+ if(o&&(U.sel.k=='room'||U.sel.k=='stair')&&(U.sel.k=='stair'||o.floor==U.floor)){const hx=M+(o.x+o.w)*U.zoom,hy=M+(o.y+o.h)*U.zoom;if(Math.abs(e.clientX-r.left-hx)<=9&&Math.abs(e.clientY-r.top-hy)<=9){snap();U.drag={m:'resize',moved:false};cv.setPointerCapture(e.pointerId);return}}
+ const hh=hit(t);
+ if(hh){U.sel=hh;const o2=getObj(hh);snap();U.drag={m:'move',dx:t.x-o2.x,dy:t.y-o2.y,moved:false};cv.setPointerCapture(e.pointerId)}else U.sel=null;
+ renderPlan();renderProps()});
+cv.addEventListener('pointermove',e=>{
+ const d=U.drag;if(!d)return;const b=B(),tc=tileAt(e,true);
+ if(d.m=='draw'){const x0=Math.min(d.s.x,tc.x),y0=Math.min(d.s.y,tc.y);U.draft={x:x0,y:y0,w:Math.abs(tc.x-d.s.x)+1,h:Math.abs(tc.y-d.s.y)+1};renderPlan();return}
+ const o=getObj(U.sel);if(!o)return;
+ if(d.m=='move'){const w=o.w||1,h=o.h||1,nx=clamp(tc.x-d.dx,0,b.w-w),ny=clamp(tc.y-d.dy,0,b.h-h);
+  if(U.sel.k=='decor'&&b.decor.some(q=>q.id!=o.id&&q.floor==o.floor&&q.x==nx&&q.y==ny))return;
+  if(nx!=o.x||ny!=o.y){o.x=nx;o.y=ny;d.moved=true;renderPlan()}}
+ else if(d.m=='resize'){const nw=clamp(tc.x-o.x+1,1,Math.max(1,b.w-o.x)),nh=clamp(tc.y-o.y+1,1,Math.max(1,b.h-o.y));if(nw!=o.w||nh!=o.h){o.w=nw;o.h=nh;d.moved=true;renderPlan()}}});
+function endDrag(){
+ const d=U.drag;if(!d)return;U.drag=null;const b=B();
+ if(d.m=='draw'&&U.draft){const r=U.draft;U.draft=null;snap();
+  if(U.tool=='room'){const o={id:uid(),name:nextName(b,U.newType),type:U.newType,floor:U.floor,x:r.x,y:r.y,w:r.w,h:r.h,round:false,open:false,hp:0};b.rooms.push(o);U.sel={k:'room',id:o.id}}
+  else{const f=asc(b),i=f.findIndex(q=>q.id==U.floor),to=(f[i+1]||f[i-1]||{}).id||null;const o={id:uid(),name:'Stair '+(b.stairs.length+1),from:U.floor,to,x:r.x,y:r.y,w:r.w,h:r.h,dir:r.h>=r.w?'N':'E',void:to?b.req.minVoid:0};b.stairs.push(o);U.sel={k:'stair',id:o.id}}
+  save();renderAll();return}
+ if(!d.moved){U.hist.u.pop();renderAll();return}
+ save();renderAll()}
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+
+/* ---------- selected-object panel ---------- */
+function renderProps(){
+ const b=B(),o=getObj(U.sel),P=$('#props');
+ if(!o){P.innerHTML=`<h2>Nothing selected</h2><p class="hint">Use <b>Select / move</b> and click a room, stairway or decor item. Use <b>Draw room</b> or <b>Draw stairs</b> and drag on the grid to add one.</p><p class="hint">Editing floor: <b>${esc(fname(b,U.floor))}</b>. ${b.rooms.filter(r=>r.floor==U.floor).length} room${b.rooms.filter(r=>r.floor==U.floor).length==1?'':'s'} here.</p>`;return}
+ const fo=cur=>asc(b).reverse().map(f=>`<option value="${f.id}"${f.id==cur?' selected':''}>${esc(f.name)}</option>`).join('');
+ const nf=(f,l,v,mn,mx,ph)=>`<label class="f">${l}<input type="number" data-f="${f}" value="${v}" min="${mn}" max="${mx}"${ph?` placeholder="${ph}"`:''}></label>`;
+ const k=U.sel.k;let h='';
+ if(k=='room'){const f=fl(b,o.floor);
+  h=`<h2>${esc(o.name)}</h2><div class="hint">Room on ${esc(f.name)}</div><div class="grid2">
+  <label class="f wide">Name<input data-f="name" value="${esc(o.name)}" maxlength="40"></label>
+  <label class="f">Type<select data-f="type">${Object.keys(TYPES).map(t=>`<option value="${t}"${t==o.type?' selected':''}>${TYPES[t][0]}</option>`).join('')}</select></label>
+  <label class="f">Floor<select data-f="floor">${fo(o.floor)}</select></label>
+  ${nf('x','Left (x)',o.x,0,99)}${nf('y','Top (y)',o.y,0,99)}${nf('w','Width',o.w,1,100)}${nf('h','Depth',o.h,1,100)}
+  <label class="f wide">Height override (panels)<input type="number" data-f="hp" value="${o.hp||''}" min="1" max="60" placeholder="Floor height: ${f.height}"></label></div>
+  <label class="chk"><input type="checkbox" data-f="round"${o.round?' checked':''}> Rounded corners</label>
+  <label class="chk" style="margin-top:6px"><input type="checkbox" data-f="open"${o.open?' checked':''}> No ceiling (open to the sky)</label>
+  <p class="hint">${o.w} × ${o.h} tiles · ${o.w*o.h} tiles of floor · ${o.hp||f.height} panels tall</p>`}
+ else if(k=='stair'){
+  h=`<h2>${esc(o.name)}</h2><div class="hint">Stairway</div><div class="grid2">
+  <label class="f wide">Name<input data-f="name" value="${esc(o.name)}" maxlength="40"></label>
+  <label class="f">Lower end on<select data-f="from">${fo(o.from)}</select></label>
+  <label class="f">Connects to<select data-f="to"><option value="">(not connected)</option>${fo(o.to)}</select></label>
+  ${nf('x','Left (x)',o.x,0,99)}${nf('y','Top (y)',o.y,0,99)}${nf('w','Width',o.w,1,100)}${nf('h','Depth',o.h,1,100)}
+  <label class="f">Faces<select data-f="dir">${['N','E','S','W'].map(d=>`<option value="${d}"${d==o.dir?' selected':''}>${{N:'North ↑',E:'East →',S:'South ↓',W:'West ←'}[d]}</option>`).join('')}</select></label>
+  ${nf('void','Open ceiling (tiles, 0 = none)',o.void,0,12)}</div>
+  <p class="hint">The stair is ${Math.min(o.w,o.h)} wide and ${Math.max(o.w,o.h)} long. The open ceiling sits beyond the top end of the stair so you can also jump up.</p>`}
+ else{const it=DI[o.item];
+  h=`<h2>${it[1]} ${esc(it[2])}</h2><div class="hint">Decor item</div><div class="grid2"><label class="f">Floor<select data-f="floor">${fo(o.floor)}</select></label><span></span>${nf('x','Column (x)',o.x,0,99)}${nf('y','Row (y)',o.y,0,99)}</div>`}
+ h+=`<div class="bar">${k!='decor'?'<button class="b" type="button" data-act="dup">Duplicate</button>':''}<button class="b danger" type="button" data-act="del">${k=='decor'?'Remove':'Delete'}</button></div>`;
+ P.innerHTML=h}
+$('#props').addEventListener('change',e=>{
+ const el=e.target,f=el.dataset.f;if(!f)return;const o=getObj(U.sel);if(!o)return;const k=U.sel.k;
+ edit(b=>{const w=o.w||1,h=o.h||1;
+  if(f=='name')o.name=(el.value.trim()||o.name).slice(0,40);
+  else if(f=='type'&&TYPES[el.value])o.type=el.value;
+  else if(f=='floor'&&fl(b,el.value))o.floor=el.value;
+  else if(f=='from'&&fl(b,el.value))o.from=el.value;
+  else if(f=='to')o.to=fl(b,el.value)?el.value:null;
+  else if(f=='dir')o.dir=el.value;
+  else if(f=='x')o.x=clamp(num(el.value,o.x),0,Math.max(0,b.w-w));
+  else if(f=='y')o.y=clamp(num(el.value,o.y),0,Math.max(0,b.h-h));
+  else if(f=='w'){o.w=clamp(num(el.value,o.w),1,b.w);o.x=clamp(o.x,0,b.w-o.w)}
+  else if(f=='h'){o.h=clamp(num(el.value,o.h),1,b.h);o.y=clamp(o.y,0,b.h-o.h)}
+  else if(f=='hp')o.hp=el.value===''?0:clamp(num(el.value,0),0,60);
+  else if(f=='void')o.void=clamp(num(el.value,0),0,12);
+  else if(f=='round'||f=='open')o[f]=el.checked;
+  if(k=='stair'&&!o.to)o.void=o.void})});
+$('#props').addEventListener('click',e=>{
+ const a=e.target.dataset.act;if(!a)return;const o=getObj(U.sel);if(!o)return;const k=U.sel.k;
+ if(a=='del')edit(b=>{const L=k=='room'?b.rooms:k=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});
+ if(a=='dup')edit(b=>{const c=JSON.parse(JSON.stringify(o));c.id=uid();c.name=(o.name+' copy').slice(0,40);c.x=clamp(o.x+1,0,b.w-o.w);c.y=clamp(o.y+1,0,b.h-o.h);(k=='room'?b.rooms:b.stairs).push(c);U.sel={k,id:c.id}})});
+
+/* ---------- decor ---------- */
+function renderDecor(){
+ const b=B(),sel=$('#decorSel');
+ if(!sel.options.length)sel.innerHTML='<option value="">Choose an item to place…</option>'+DEC.map(g=>`<optgroup label="${g[0]}">${g[1].map(d=>`<option value="${d[0]}">${d[1]} ${d[2]}</option>`).join('')}</optgroup>`).join('');
+ sel.value=U.armed;
+ $('#decorHint').textContent=U.armed?`Click a tile on ${fname(b,U.floor)} to place one ${DI[U.armed][2].toLowerCase()}. Each click places one item. Press Esc to stop placing.`:'Pick an item, then click a tile on the plan to place it. Nothing is placed until you click.';
+ const nonMarker=b.decor.filter(d=>d.item!='palbox');
+ $('#decorCount').textContent=b.decor.length?`${b.decor.length} placed`:'None placed';
+ $('#decorClear').disabled=!nonMarker.length;
+ const cnt={};b.decor.forEach(d=>cnt[d.item]=(cnt[d.item]||0)+1);
+ $('#decorSum').textContent=Object.keys(cnt).map(k=>`${DI[k][1]} ${DI[k][2].replace(' (one per base)','')} × ${cnt[k]}`).join('   ');
+ const L=$('#decorList');L.hidden=!b.decor.length;
+ L.innerHTML=b.decor.slice(0,300).map(d=>`<div><span>${DI[d.item][1]}</span><span class="g">${esc(DI[d.item][2].replace(' (one per base)',''))} · ${esc(fname(b,d.floor))} · (${d.x}, ${d.y})</span><button type="button" data-go="${d.id}">Show</button><button type="button" data-rm="${d.id}">Remove</button></div>`).join('')+(b.decor.length>300?`<div>…and ${b.decor.length-300} more</div>`:'')}
+$('#decorSel').addEventListener('change',e=>{U.armed=e.target.value;if(U.armed)U.tool='select';renderPlanControls();renderDecor()});
+$('#decorClear').addEventListener('click',()=>{const n=B().decor.filter(d=>d.item!='palbox').length;if(n&&confirm(`Remove all ${n} decor items? The Palbox marker stays. You can undo this.`))edit(b=>{b.decor=b.decor.filter(d=>d.item=='palbox');U.sel=null})});
+$('#decorList').addEventListener('click',e=>{const t=e.target;
+ if(t.dataset.rm)edit(b=>{b.decor=b.decor.filter(d=>d.id!=t.dataset.rm);if(U.sel&&U.sel.id==t.dataset.rm)U.sel=null});
+ if(t.dataset.go){const d=B().decor.find(q=>q.id==t.dataset.go);if(d){U.floor=d.floor;U.sel={k:'decor',id:d.id};renderAll()}}});
+
+/* ---------- plan controls ---------- */
+function renderPlanControls(){
+ const b=B();
+ $('#floorSel').innerHTML=asc(b).reverse().map(f=>`<option value="${f.id}"${f.id==U.floor?' selected':''}>${esc(f.name)} (${lvl(f)})</option>`).join('');
+ $('#gW').value=b.w;$('#gH').value=b.h;$('#zoom').value=U.zoom;$('#gridT').checked=U.grid;$('#ghostT').checked=U.ghost;
+ $$('#tools [data-tool]').forEach(x=>x.setAttribute('aria-pressed',!U.armed&&x.dataset.tool==U.tool?'true':'false'));
+ $('#newType').value=U.newType;
+ $('#toolHint').textContent=U.armed?'Placing decor. Click a tile to place one item.':U.tool=='room'?`Drag across the grid to draw a room on ${fname(b,U.floor)}.`:U.tool=='stair'?`Drag across the grid to draw a stairway on ${fname(b,U.floor)}. It connects to the next floor up by default.`:'Click to select. Drag to move. Drag the square handle at a corner to resize. Arrow keys nudge, Delete removes.';
+ $('#legend').innerHTML=Object.keys(TYPES).map(t=>`<span><i style="background:var(${TYPES[t][1]})"></i>${TYPES[t][0]}</span>`).join('')+'<span>Dashed outlines = floors above and below</span>'}
+function setTool(t){U.tool=t;U.armed='';renderPlanControls();renderDecor()}
+$$('#tools [data-tool]').forEach(x=>x.addEventListener('click',()=>setTool(x.dataset.tool)));
+$('#newType').innerHTML=Object.keys(TYPES).map(t=>`<option value="${t}">${TYPES[t][0]}</option>`).join('');
+$('#newType').addEventListener('change',e=>{U.newType=e.target.value});
+$('#floorSel').addEventListener('change',e=>{U.floor=e.target.value;U.sel=null;renderAll()});
+function addFloor(dir){edit(b=>{const lv=dir>0?Math.max(...b.floors.map(f=>f.level))+1:Math.min(...b.floors.map(f=>f.level))-1;if(b.floors.length>=30)return;const f={id:uid(),name:dir>0?'Floor '+lv:'Basement '+(-lv),level:lv,height:6,roof:false};b.floors.push(f);U.floor=f.id;U.sel=null})}
+$('#addUp').addEventListener('click',()=>addFloor(1));$('#addDown').addEventListener('click',()=>addFloor(-1));
+$('#fAddUp').addEventListener('click',()=>addFloor(1));$('#fAddDown').addEventListener('click',()=>addFloor(-1));
+function setGrid(){const w=clamp(num($('#gW').value,B().w),5,100),h=clamp(num($('#gH').value,B().h),5,100);edit(b=>{b.w=w;b.h=h});if(U.fit)fit();renderAll()}
+$('#gW').addEventListener('change',setGrid);$('#gH').addEventListener('change',setGrid);
+$('#zoom').addEventListener('input',e=>{U.zoom=clamp(num(e.target.value,24),4,40);U.fit=false;renderPlan()});
+$('#fitB').addEventListener('click',()=>{U.fit=true;fit();renderPlanControls();renderPlan()});
+$('#gridT').addEventListener('change',e=>{U.grid=e.target.checked;renderPlan();renderSide()});
+$('#ghostT').addEventListener('change',e=>{U.ghost=e.target.checked;renderPlan()});
+
+/* ---------- side view ---------- */
+function renderSide(){
+ const b=B(),L=layout(b),ax=U.view.axis,n=ax=='front'?b.w:b.h,Mg=34,Gl=124,Rg=44;
+ const totalV=L.top-L.bot+2,s=Math.max(3,Math.min(28,(940-Gl-Rg)/n,540/totalV)),Wp=n*s+Gl+Rg,Hp=totalV*s+2*Mg;
+ const X=t=>Gl+t*s,Yv=p=>Mg+(L.top+2-p)*s;
+ const other=ax=='front'?b.h:b.w;U.view.pos=clamp(U.view.pos,0,other-1);
+ $('#sliceR').max=other-1;$('#sliceR').value=U.view.pos;$('#sliceT').checked=U.view.slice;$('#sliceWrap').hidden=!U.view.slice;
+ $('#sliceTxt').textContent=U.view.slice?(ax=='front'?`Showing row ${U.view.pos} (counting from the north edge)`:`Showing column ${U.view.pos} (counting from the west edge)`):'Showing every room';
+ $('#axisSel').value=ax;
+ const sv=$('#sv');sv.setAttribute('viewBox',`0 0 ${Wp} ${Hp}`);
+ const inS=o=>!U.view.slice||(ax=='front'?(o.y<=U.view.pos&&U.view.pos<o.y+o.h):(o.x<=U.view.pos&&U.view.pos<o.x+o.w));
+ const hgt=(L.top+2-L.bot)*s;
+ let h=`<defs><pattern id="sg" x="${Gl}" y="${Yv(0)}" width="${s}" height="${s}" patternUnits="userSpaceOnUse"><path d="M${s} 0V${s}M0 ${s}H${s}" fill="none" stroke="var(--ln)" stroke-width=".8"/></pattern></defs>`;
+ h+=`<rect x="${Gl}" y="${Yv(L.top+2)}" width="${n*s}" height="${hgt}" fill="var(--sf)"/>`;
+ if(L.bot<0)h+=`<rect x="${Gl}" y="${Yv(0)}" width="${n*s}" height="${-L.bot*s}" fill="var(--earth)" fill-opacity=".2"/>`;
+ if(U.grid)h+=`<rect x="${Gl}" y="${Yv(L.top+2)}" width="${n*s}" height="${hgt}" fill="url(#sg)"/>`;
+ asc(b).slice().reverse().forEach((f,i)=>{const[,y1]=L.pos[f.id],act=f.id==U.floor;
+  h+=`<g class="band" data-fid="${f.id}" style="cursor:pointer"><rect x="1" y="${Yv(y1)}" width="${Gl+n*s-1}" height="${f.height*s}" fill="${f.level<0?'var(--earth)':'var(--ln)'}" fill-opacity="${i%2?.08:.2}" stroke="${act?'var(--gold)':'var(--mu)'}" stroke-width="${act?3:1}" stroke-opacity="${act?1:.5}"/><text class="al" x="8" y="${Yv(y1)+f.height*s/2-1}">${esc(trunc(f.name,17))}</text><text class="al sm" x="8" y="${Yv(y1)+f.height*s/2+12}">${f.height} panels · ${lvl(f)}</text></g>`});
+ b.rooms.forEach(o=>{const f=fl(b,o.floor);if(!f||!inS(o))return;const y0=L.pos[f.id][0],hp=o.hp||f.height,a0=ax=='front'?o.x:o.y,ln=ax=='front'?o.w:o.h,c=`var(${TYPES[o.type][1]})`;
+  h+=`<g data-room="${o.id}" style="cursor:pointer"><rect x="${X(a0)}" y="${Yv(y0+hp)}" width="${ln*s}" height="${hp*s}" fill="${c}" fill-opacity=".38" stroke="${c}" stroke-width="2"${o.type=='arch'?' stroke-dasharray="4 3"':''}/>`;
+  if(ln*s>46&&hp*s>16)h+=`<text x="${X(a0+ln/2)}" y="${Yv(y0+hp/2)+4}">${esc(trunc(o.name,ln*s/6.8))}</text>`;
+  if(o.open||f.roof)h+=`<text x="${X(a0+ln/2)}" y="${Yv(y0+hp)-4}" class="sm">open to the sky</text>`;h+='</g>'});
+ b.stairs.forEach(st=>{const sf=stairFloors(b,st);if(!sf||!(!U.view.slice||(ax=='front'?(st.y<=U.view.pos&&U.view.pos<st.y+st.h):(st.x<=U.view.pos&&U.view.pos<st.x+st.w))))return;
+  const yl=L.pos[sf.lo.id][0],yh=L.pos[sf.hi.id][0],a0=ax=='front'?st.x:st.y,ln=ax=='front'?st.w:st.h;
+  const along=ax=='front'?(st.dir=='E'||st.dir=='W'):(st.dir=='N'||st.dir=='S'),rise=ax=='front'?st.dir=='E':st.dir=='S';
+  if(along){const xa=rise?X(a0):X(a0+ln),xb=rise?X(a0+ln):X(a0);h+=`<line x1="${xa}" y1="${Yv(yl)}" x2="${xb}" y2="${Yv(yh)}" stroke="var(--ink)" stroke-width="3"/><text x="${(xa+xb)/2}" y="${(Yv(yl)+Yv(yh))/2-6}" class="sm">stair</text>`}
+  else h+=`<rect x="${X(a0)}" y="${Yv(yh)}" width="${ln*s}" height="${(yh-yl)*s}" fill="var(--ink)" fill-opacity=".12" stroke="var(--ink)" stroke-dasharray="3 3"/><text x="${X(a0+ln/2)}" y="${Yv(yh)+12}" class="sm">stair (end-on)</text>`;
+  const v=voidRect(st);if(v){const va=ax=='front'?v.x:v.y;h+=`<rect x="${X(va)}" y="${Yv(yh+.7)}" width="${v.w*s}" height="${.7*s}" fill="var(--bg)" stroke="var(--ink)" stroke-dasharray="3 2"/>`}});
+ h+=`<line x1="${Gl}" x2="${Gl+n*s}" y1="${Yv(0)}" y2="${Yv(0)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="7 4"/><text class="sm ar" x="${Gl+n*s}" y="${Yv(0)-4}">ground level</text>`;
+ for(let i=0;i<=n;i+=5)h+=`<text class="sm" x="${X(i)}" y="${Mg-10}">${i}</text>`;
+ for(let p=Math.ceil(L.bot/5)*5;p<=L.top;p+=5)h+=`<text class="sm al" x="${Gl+n*s+6}" y="${Yv(p)+3}">${p}</text>`;
+ sv.innerHTML=h}
+$('#axisSel').addEventListener('change',e=>{U.view.axis=e.target.value;renderSide();renderPlan()});
+$('#sliceT').addEventListener('change',e=>{U.view.slice=e.target.checked;renderSide();renderPlan()});
+$('#sliceR').addEventListener('input',e=>{U.view.pos=num(e.target.value,0);renderSide();renderPlan()});
+$('#sv').addEventListener('click',e=>{
+ const r=e.target.closest('[data-room]');if(r){const o=B().rooms.find(q=>q.id==r.dataset.room);if(o){U.floor=o.floor;U.sel={k:'room',id:o.id};renderAll();return}}
+ const f=e.target.closest('[data-fid]');if(f){U.floor=f.dataset.fid;U.sel=null;renderAll()}});
+
+/* ---------- floors and stairs ---------- */
+function renderFloors(){
+ const b=B();
+ $('#floorList').innerHTML=asc(b).reverse().map(f=>{const n=b.rooms.filter(r=>r.floor==f.id).length;return`<div class="frow" data-id="${f.id}">
+ <label class="f">Name<input data-ff="name" value="${esc(f.name)}" maxlength="40"></label>
+ <span class="badge">${lvl(f)}</span>
+ <label class="f">Height (panels)<input type="number" data-ff="height" value="${f.height}" min="2" max="60"></label>
+ <label class="chk"><input type="checkbox" data-ff="roof"${f.roof?' checked':''}> Open roof</label>
+ <span class="hint">${n} room${n==1?'':'s'}</span><span class="sp"></span>
+ <button class="b" type="button" data-fa="edit">Edit on plan</button>
+ ${f.level!=0?'<button class="b danger" type="button" data-fa="del">Remove</button>':''}</div>`}).join('');
+ $('#stairList').innerHTML=b.stairs.length?`<table><thead><tr><th>Stairway</th><th>Connects</th><th>Size</th><th>Faces</th><th>Open ceiling</th><th></th></tr></thead><tbody>${b.stairs.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(fname(b,s.from))} → ${s.to?esc(fname(b,s.to)):'<i>not connected</i>'}</td><td>${s.w} × ${s.h}</td><td>${{N:'North',E:'East',S:'South',W:'West'}[s.dir]}</td><td>${s.void?s.void+' × '+s.void:'none'}</td><td><button class="b" data-sa="go" data-id="${s.id}" type="button">Edit on plan</button> <button class="b danger" data-sa="del" data-id="${s.id}" type="button">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p class="hint">No stairways yet.</p>'}
+$('#floorList').addEventListener('change',e=>{
+ const f=e.target.dataset.ff,id=e.target.closest('.frow').dataset.id;if(!f)return;
+ edit(b=>{const o=fl(b,id);if(f=='name')o.name=(e.target.value.trim()||o.name).slice(0,40);else if(f=='height')o.height=clamp(num(e.target.value,o.height),2,60);else if(f=='roof')o.roof=e.target.checked})});
+$('#floorList').addEventListener('click',e=>{
+ const a=e.target.dataset.fa,id=e.target.closest('.frow')&&e.target.closest('.frow').dataset.id;if(!a)return;
+ if(a=='edit'){U.floor=id;U.sel=null;showTab('plan');renderAll()}
+ if(a=='del'){const b=B(),n=b.rooms.filter(r=>r.floor==id).length+b.decor.filter(d=>d.floor==id).length+b.stairs.filter(s=>s.from==id||s.to==id).length;
+  if(n&&!confirm(`Remove ${fname(b,id)}? Its rooms, decor and stairways go with it. You can undo this.`))return;
+  edit(b=>{b.floors=b.floors.filter(f=>f.id!=id);b.rooms=b.rooms.filter(r=>r.floor!=id);b.decor=b.decor.filter(d=>d.floor!=id);b.stairs=b.stairs.filter(s=>s.from!=id);b.stairs.forEach(s=>{if(s.to==id){s.to=null;s.void=0}});
+   const neg=b.floors.filter(f=>f.level<0).sort((x,y)=>x.level-y.level),pos=b.floors.filter(f=>f.level>=0).sort((x,y)=>x.level-y.level);neg.forEach((f,i)=>f.level=i-neg.length);pos.forEach((f,i)=>f.level=i);U.sel=null})}});
+$('#stairList').addEventListener('click',e=>{const a=e.target.dataset.sa,id=e.target.dataset.id;if(!a)return;
+ if(a=='go'){const s=B().stairs.find(q=>q.id==id);if(s){U.floor=s.from;U.sel={k:'stair',id};showTab('plan');renderAll()}}
+ if(a=='del')edit(b=>{b.stairs=b.stairs.filter(s=>s.id!=id);U.sel=null})});
+
+/* ---------- checks, dimensions ---------- */
+function runChecks(b){
+ const out=[],r=b.req;
+ b.rooms.forEach(o=>{const f=fl(b,o.floor),nm=`${o.name} (${f.name})`;
+  if(o.x<0||o.y<0||o.x+o.w>b.w||o.y+o.h>b.h)out.push(['error',`${nm} reaches outside the ${b.w} × ${b.h} grid. Make the grid larger, or use Edit on plan in the Rooms table to move it.`]);
+  if(o.type!='arch'&&Math.min(o.w,o.h)<r.minSide)out.push(['warn',`${nm} is only ${Math.min(o.w,o.h)} tiles across. The minimum is ${r.minSide} so working Pals can pass each other.`]);
+  const hp=o.hp||f.height;if(hp<r.minH)out.push(['warn',`${nm} is ${hp} panels tall. The minimum is ${r.minH}.`]);
+  if(o.hp&&o.hp>f.height)out.push(['warn',`${nm} is taller (${o.hp} panels) than its floor (${f.height}).`])});
+ let ov=0;for(let i=0;i<b.rooms.length&&ov<15;i++)for(let j=i+1;j<b.rooms.length&&ov<15;j++){const p=b.rooms[i],q=b.rooms[j];if(p.floor!=q.floor||p.type=='arch'||q.type=='arch')continue;
+  if(p.x<q.x+q.w&&q.x<p.x+p.w&&p.y<q.y+q.h&&q.y<p.y+p.h){out.push(['warn',`${p.name} and ${q.name} overlap on ${fname(b,p.floor)}. Use an Archway / opening room if the overlap is a doorway.`]);ov++}}
+ b.stairs.forEach(s=>{const sf=stairFloors(b,s);
+  if(!s.to)out.push(['warn',`${s.name} connects only one floor. Pick the floor it leads to.`]);
+  else if(!sf)out.push(['warn',`${s.name} starts and ends on the same floor.`]);
+  if(Math.min(s.w,s.h)<r.minStairW)out.push(['warn',`${s.name} is only ${Math.min(s.w,s.h)} wide. The minimum is ${r.minStairW}.`]);
+  if(s.to&&s.void>0&&s.void<r.minVoid)out.push(['warn',`${s.name} has a ${s.void} × ${s.void} open ceiling. The minimum is ${r.minVoid} × ${r.minVoid}.`]);
+  if(s.x<0||s.y<0||s.x+s.w>b.w||s.y+s.h>b.h)out.push(['error',`${s.name} reaches outside the grid.`]);
+  if(sf)[sf.lo,sf.hi].forEach(f=>{const c={x:s.x+Math.floor(s.w/2),y:s.y+Math.floor(s.h/2)};if(!b.rooms.some(q=>q.floor==f.id&&q.type!='arch'&&inRect(q,c)))out.push(['warn',`${s.name} is not inside a room on ${f.name}.`])})});
+ const oob=b.decor.filter(d=>d.x<0||d.y<0||d.x>=b.w||d.y>=b.h).length;if(oob)out.push(['error',`${oob} decor item${oob==1?' is':'s are'} outside the grid.`]);
+ const pb=b.decor.find(d=>d.item=='palbox');
+ if(!pb)out.push(['info','No Palbox placed. Choose Palbox in the decor list to mark it and check your build radius.']);
+ else if(r.radius>0){let far=0;b.rooms.forEach(o=>[[o.x,o.y],[o.x+o.w,o.y],[o.x,o.y+o.h],[o.x+o.w,o.y+o.h]].forEach(([x,y])=>far=Math.max(far,Math.hypot(x-(pb.x+.5),y-(pb.y+.5)))));
+  if(far>r.radius)out.push(['warn',`The farthest room corner is ${far.toFixed(1)} tiles from the Palbox. Your build radius is ${r.radius}.`])}
+ if(!b.rooms.length)out.push(['info','No rooms yet. Use Draw room on the plan to add one.']);
+ if(!out.some(x=>x[0]=='error'||x[0]=='warn'))out.unshift(['ok','Every requirement is met.']);
+ return out}
+const tbl=(h,rows)=>rows.length?`<table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'<p class="hint">Nothing here yet.</p>';
+function renderDims(){
+ const b=B(),L=layout(b),area=b.rooms.reduce((a,r)=>a+r.w*r.h,0);
+ let bb='none';if(b.rooms.length){const x0=Math.min(...b.rooms.map(r=>r.x)),x1=Math.max(...b.rooms.map(r=>r.x+r.w)),y0=Math.min(...b.rooms.map(r=>r.y)),y1=Math.max(...b.rooms.map(r=>r.y+r.h));bb=`${x1-x0} × ${y1-y0}`}
+ const above=b.floors.filter(f=>f.level>0).length,below=b.floors.filter(f=>f.level<0).length;
+ $('#stats').innerHTML=[[`${b.w} × ${b.h}`,'grid (tiles)'],[b.floors.length,`floors (${above} above, ${below} below ground)`],[b.rooms.length,'rooms'],[area,'tiles of floor in rooms'],[bb,'footprint of all rooms'],[L.top,'panels above ground'],[-L.bot,'panels below ground'],[b.stairs.length,'stairways'],[b.decor.length,'decor items']].map(x=>`<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+ const R=b.req,rf=(k,l,mx)=>`<label class="f">${l}<input type="number" data-req="${k}" value="${R[k]}" min="${k=='radius'?0:1}" max="${mx}"></label>`;
+ if(!$('#reqBar').dataset.built||$('#reqBar').dataset.base!=b.id||document.activeElement.closest&&!document.activeElement.closest('#reqBar')){$('#reqBar').innerHTML=rf('minH','Minimum room height (panels)',60)+rf('minSide','Minimum room width (tiles)',20)+rf('minStairW','Minimum stair width (tiles)',20)+rf('minVoid','Minimum open ceiling (tiles)',20)+rf('radius','Palbox build radius (tiles, 0 = off)',300);$('#reqBar').dataset.built=1;$('#reqBar').dataset.base=b.id}
+ $('#checks').innerHTML=runChecks(b).map(c=>`<li><span class="tag ${c[0]}">${{error:'Fix',warn:'Check',info:'Note',ok:'OK'}[c[0]]}</span><span>${esc(c[1])}</span></li>`).join('');
+ const cnt={};b.rooms.forEach(r=>cnt[r.floor]=(cnt[r.floor]||0)+1);
+ $('#tFloors').innerHTML=tbl(['Floor','Level','Height (panels)','Rises from → to (panel)','Rooms','Floor area (tiles)'],asc(b).reverse().map(f=>[esc(f.name),lvl(f),f.height+(f.roof?' (open roof)':''),`${L.pos[f.id][0]} → ${L.pos[f.id][1]}`,cnt[f.id]||0,b.rooms.filter(r=>r.floor==f.id).reduce((a,r)=>a+r.w*r.h,0)]));
+ $('#tRooms').innerHTML=tbl(['Room','Type','Floor','Position (x, y)','Size (tiles)','Height (panels)','Ceiling',''],b.rooms.map(r=>{const f=fl(b,r.floor);return[esc(r.name),TYPES[r.type][0],esc(f.name),`${r.x}, ${r.y}`,`${r.w} × ${r.h}`,r.hp||f.height,(r.open||f.roof)?'Open':'Glass',`<button class="b" type="button" data-roomgo="${r.id}">Edit on plan</button>`]}));
+ $('#tStairs').innerHTML=tbl(['Stairway','Connects','Position (x, y)','Width × length','Faces','Open ceiling'],b.stairs.map(s=>[esc(s.name),`${esc(fname(b,s.from))} → ${s.to?esc(fname(b,s.to)):'not connected'}`,`${s.x}, ${s.y}`,`${Math.min(s.w,s.h)} × ${Math.max(s.w,s.h)}`,{N:'North',E:'East',S:'South',W:'West'}[s.dir],s.void?`${s.void} × ${s.void}`:'none']));
+ const dc={};b.decor.forEach(d=>dc[d.item]=(dc[d.item]||0)+1);
+ $('#tDecor').innerHTML=tbl(['Item','Count'],Object.keys(dc).map(k=>[`${DI[k][1]} ${esc(DI[k][2].replace(' (one per base)',''))}`,dc[k]]))}
+$('#tRooms').addEventListener('click',e=>{const id=e.target.dataset.roomgo;if(!id)return;const r=B().rooms.find(q=>q.id==id);if(r){U.floor=r.floor;U.sel={k:'room',id};showTab('plan');renderAll()}});
+$('#reqBar').addEventListener('change',e=>{const k=e.target.dataset.req;if(!k)return;const lim={minH:[1,60],minSide:[1,20],minStairW:[1,20],minVoid:[1,20],radius:[0,300]}[k];edit(b=>{b.req[k]=clamp(num(e.target.value,b.req[k]),lim[0],lim[1])})});
+
+/* ---------- build order ---------- */
+function steps(b){
+ const out=[],L=layout(b),pb=b.decor.find(d=>d.item=='palbox');
+ out.push(['site','Pick the site and place the Palbox',pb?`Palbox is marked on ${fname(b,pb.floor)} at (${pb.x}, ${pb.y}). Place the real one there.`:'Place the Palbox first so the build radius is centred where you want it.']);
+ const ordered=[...asc(b).filter(f=>f.level>=0),...asc(b).filter(f=>f.level<0).reverse()];
+ ordered.forEach(f=>{const rs=b.rooms.filter(r=>r.floor==f.id);if(!rs.length)return;const area=rs.reduce((a,r)=>a+r.w*r.h,0);
+  out.push(['floor:'+f.id,`Build ${f.name}`,`${rs.length} room${rs.length==1?'':'s'}: ${rs.map(r=>`${r.name} (${r.w} × ${r.h}${r.hp?', '+r.hp+' panels':''})`).join('; ')}. About ${area} tiles of glass foundation, walls ${f.height} panels tall${f.roof?', open roof':', glass ceilings'}${f.level<0?'. This floor is below ground.':'.'}`])});
+ b.stairs.forEach(s=>{const sf=stairFloors(b,s);out.push(['stair:'+s.id,`Add ${s.name}`,sf?`From ${sf.lo.name} up to ${sf.hi.name}, ${Math.min(s.w,s.h)} wide and ${Math.max(s.w,s.h)} long at (${s.x}, ${s.y}), facing ${{N:'north',E:'east',S:'south',W:'west'}[s.dir]}${s.void?`, with a ${s.void} × ${s.void} open ceiling`:''}.`:`At (${s.x}, ${s.y}). Pick the floors it connects.`])});
+ if(b.decor.filter(d=>d.item!='palbox').length){const c=b.decor.filter(d=>d.item!='palbox').length;out.push(['decor','Place decor and foliage',`${c} item${c==1?'':'s'} planned. See the Decor table on the Dimensions tab for the list.`])}
+ out.push(['final','Test and assign Pals','Walk your largest Pal through every room and door, then assign Pals to each room.']);
+ return out}
+function renderOrder(){
+ const b=B(),S2=steps(b),ol=$('#steps');ol.innerHTML='';let n=0;
+ S2.forEach(s=>{const d=!!b.done[s[0]];if(d)n++;const li=document.createElement('li');li.className=d?'done':'';
+  li.innerHTML=`<input type="checkbox" ${d?'checked':''}><label><b>${esc(s[1])}</b><span>${esc(s[2])}</span></label>`;
+  const cb=li.querySelector('input'),lb=li.querySelector('label');lb.addEventListener('click',()=>cb.click());
+  cb.addEventListener('change',()=>{b.done[s[0]]=cb.checked;if(!cb.checked)delete b.done[s[0]];save();renderOrder()});ol.appendChild(li)});
+ $('#pb').style.width=n/S2.length*100+'%';$('#pt').textContent=n+' of '+S2.length+' steps done'}
+
+/* ---------- bases, tabs, import and export ---------- */
+function renderBar(){
+ $('#baseSel').innerHTML=Object.values(S.bases).map(b=>`<option value="${esc(b.id)}"${b.id==S.cur?' selected':''}>${esc(b.name)}</option>`).join('');
+ $('#baseName').value=B().name;$('#bUndo').disabled=!U.hist.u.length;$('#bRedo').disabled=!U.hist.r.length}
+function switchBase(id){S.cur=id;U.hist={u:[],r:[]};U.sel=null;U.draft=null;U.drag=null;U.view.pos=0;fixFloor();if(U.fit)fit();save();renderAll()}
+$('#baseSel').addEventListener('change',e=>switchBase(e.target.value));
+$('#baseName').addEventListener('change',e=>{const v=e.target.value.trim();if(!v){e.target.value=B().name;return}edit(b=>{b.name=v.slice(0,60)})});
+$('#bNew').addEventListener('click',()=>{$('#newPanel').hidden=!$('#newPanel').hidden;$('#nName').value='New base '+(Object.keys(S.bases).length+1);$('#nName').focus()});
+$('#nCancel').addEventListener('click',()=>{$('#newPanel').hidden=true});
+$('#nGo').addEventListener('click',()=>{const b=mkBase(($('#nName').value.trim()||'New base').slice(0,60),num($('#nW').value,20),num($('#nH').value,20));S.bases[b.id]=b;$('#newPanel').hidden=true;U.fit=true;switchBase(b.id)});
+$('#bDup').addEventListener('click',()=>{const c=sane(JSON.parse(JSON.stringify(B())));c.id=uid();c.name=(B().name+' copy').slice(0,60);S.bases[c.id]=c;switchBase(c.id)});
+$('#bDel').addEventListener('click',()=>{if(!confirm(`Delete "${B().name}"? This can't be undone. Export it first if you want a copy.`))return;delete S.bases[S.cur];if(!Object.keys(S.bases).length){const b=mkBase('My first base',20,20);S.bases[b.id]=b}switchBase(Object.keys(S.bases)[0])});
+$('#bUndo').addEventListener('click',undo);$('#bRedo').addEventListener('click',redo);
+$('#bExp').addEventListener('click',()=>{const b=B(),blob=new Blob([JSON.stringify({app:'megabase-builder:'+DESIGN.id,version:1,base:b},null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(b.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'base')+'.megabase.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)});
+$('#bImp').addEventListener('click',()=>$('#impFile').click());
+$('#impFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const o=JSON.parse(rd.result),b=sane(o&&o.base?o.base:o);if(!b)throw 0;b.id=uid();S.bases[b.id]=b;U.fit=true;switchBase(b.id)}catch(err){alert('That file is not a MegaBase Builder export.')}};rd.readAsText(f);e.target.value=''});
+function showTab(t){U.tab=t;$$('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.v==t));$$('.view').forEach(v=>v.classList.toggle('on',v.id=='v-'+t))}
+$$('nav button').forEach(x=>x.addEventListener('click',()=>{showTab(x.dataset.v);if(x.dataset.v=='side')renderSide()}));
+document.addEventListener('keydown',e=>{
+ const tag=(e.target.tagName||'').toLowerCase(),typing=tag=='input'||tag=='select'||tag=='textarea';
+ if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='z'){e.preventDefault();e.shiftKey?redo():undo();return}
+ if((e.ctrlKey||e.metaKey)&&!typing&&e.key.toLowerCase()=='y'){e.preventDefault();redo();return}
+ if(e.key=='Escape'){U.armed='';U.tool='select';U.sel=null;U.draft=null;U.drag=null;renderAll();return}
+ if(typing||U.tab!='plan')return;
+ const k=e.key.toLowerCase();
+ if(k=='v')setTool('select');else if(k=='r')setTool('room');else if(k=='s')setTool('stair');
+ const o=getObj(U.sel);if(!o)return;
+ if(k=='delete'||k=='backspace'){e.preventDefault();const kk=U.sel.k;edit(b=>{const L=kk=='room'?b.rooms:kk=='stair'?b.stairs:b.decor;L.splice(L.indexOf(o),1);U.sel=null});return}
+ const dx={arrowleft:-1,arrowright:1}[k]||0,dy={arrowup:-1,arrowdown:1}[k]||0;
+ if(dx||dy){e.preventDefault();const b=B();edit(()=>{o.x=clamp(o.x+dx,0,Math.max(0,b.w-(o.w||1)));o.y=clamp(o.y+dy,0,Math.max(0,b.h-(o.h||1)))})}});
+
+function renderAll(){renderBar();renderPlanControls();renderPlan();renderProps();renderDecor();renderSide();renderFloors();renderDims();renderOrder()}
+load();fixFloor();fit();renderAll();
+</script>
+</body></html>
